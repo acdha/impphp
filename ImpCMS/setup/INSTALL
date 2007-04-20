@@ -1,0 +1,115 @@
+#!/bin/sh
+#
+# A simple setup script to install a fresh ImpCMS
+#
+# This script will create a database, add the tables, set permissions and
+# create an include file for PHP scripts
+#
+# TODO: replace this with a Perl or PHP script which is smarter about
+#		putting files in the proper locations
+#
+# $Id$
+# $ProjectHeader: ImpCMS 0.3 Fri, 05 Apr 2002 23:34:31 -0800 chris $
+#
+
+
+# Defaults:
+MYSQL_SERVER=localhost
+MYSQL_USER=root
+
+DB_NAME=impcms
+DB_ADMIN_ACCOUNT=ImpAdmin
+DB_USER_ACCOUNT=ImpUser
+
+INSTALL_BASE=`pwd`
+
+echo ImpCMS Setup
+echo
+echo This script will create a database, add the tables, set permissions and
+echo create an include file for PHP scripts
+echo
+echo MySQL Information
+echo "Server [$MYSQL_SERVER]:"
+read TMP
+if [ ! -z "$TMP" ]; then
+	MYSQL_SERVER=$TMP;
+fi
+
+echo We need an account which can create a database:
+echo "Username [$MYSQL_USER]:"
+read TMP
+if [ ! -z "$TMP" ]; then
+	MYSQL_USER=$TMP;
+fi
+
+echo "Password:"
+read TMP
+if [ ! -z "$TMP" ]; then
+	MYSQL_PASSWORD=$TMP;
+fi
+
+echo
+echo ImpCMS Database Settings
+echo "Database name [$DB_NAME]:"
+read TMP
+if [ ! -z "$TMP" ]; then
+	DB_NAME=$TMP;
+fi
+
+echo "DB Admin account (only the admin area connects with this account) [$DB_ADMIN_ACCOUNT]:"
+read TMP
+if [ ! -z "$TMP" ]; then
+	DB_ADMIN_ACCOUNT=$TMP;
+fi
+
+echo "Password:"
+read TMP
+if [ ! -z "$TMP" ]; then
+	DB_ADMIN_ACCOUNT_PASSWORD=$TMP;
+fi
+
+echo "DB User account (all non-admin access uses this account) [$DB_USER_ACCOUNT]:"
+read TMP
+if [ ! -z "$TMP" ]; then
+	DB_USER_ACCOUNT=$TMP;
+fi
+
+echo "Password:"
+read TMP
+if [ ! -z "$TMP" ]; then
+	DB_USER_ACCOUNT_PASSWORD=$TMP;
+fi
+
+# Used to generate some config files
+SED_OPTIONS="-e s/UNCONFIGURED_IMPCMS_DB_SERVER/$MYSQL_SERVER/ -e s/UNCONFIGURED_IMPCMS_DB_NAME/$DB_NAME/ -e s/UNCONFIGURED_IMPCMS_DB_ADMIN_ACCOUNT_PASSWORD/$DB_ADMIN_ACCOUNT_PASSWORD/ -e s/UNCONFIGURED_IMPCMS_DB_USER_ACCOUNT_PASSWORD/$DB_USER_ACCOUNT_PASSWORD/ -e s/UNCONFIGURED_IMPCMS_DB_ADMIN_ACCOUNT/$DB_ADMIN_ACCOUNT/ -e s/UNCONFIGURED_IMPCMS_DB_USER_ACCOUNT/$DB_USER_ACCOUNT/"
+
+echo Settings:
+echo "MySQL Connect String:    $MYSQL_USER@$MYSQL_SERVER"
+echo "ImpCMS DB:               $DB_NAME"
+echo "ImpCMS DB Admin Account: $DB_ADMIN_ACCOUNT"
+echo "ImpCMS DB User Account:  $DB_USER_ACCOUNT"
+# echo "sed options:             $SED_OPTIONS"
+echo "config.php will be placed in: $INSTALL_BASE"
+echo
+echo "Press any key to continue or hit ^C to abort"
+read GARBAGE
+
+cd src/setup/sql
+
+echo "Creating database"
+mysqladmin -u "$MYSQL_USER" -h "$MYSQL_SERVER" --password="$MYSQL_PASSWORD" create "$DB_NAME" || exit 255
+echo "Creating tables"
+mysql -u "$MYSQL_USER" -h "$MYSQL_SERVER" --password="$MYSQL_PASSWORD" -e 'source install.sql' "$DB_NAME" || exit 255
+
+echo "Creating database accounts"
+# security.sql
+cat set-mysql-permissions.sql | sed $SED_OPTIONS | mysql -u "$MYSQL_USER" -h "$MYSQL_SERVER" --password="$MYSQL_PASSWORD" "$DB_NAME" || exit 255
+
+cd ..
+
+echo "Generating config.php"
+sed $SED_OPTIONS < config-template.php > "$INSTALL_BASE/impcms-config.php"
+
+cd $INSTALL_BASE
+
+echo "Done - enjoy your CMS!"
