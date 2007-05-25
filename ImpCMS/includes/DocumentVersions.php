@@ -1,8 +1,8 @@
 <?php
 	class DocumentVersion extends DBObject {
 		var $Properties = array(
-			'Document'			=> 'object',
-			'Creator'				=> 'object',
+			'Document'			=> array('type' => 'object', 'lazy' => true),
+			'Creator'				=> array('type' => 'object', 'class' => 'User', 'lazy' => true),
 			'Created'				=> 'datetime',
 			'Modified'			=> 'timestamp',
 			'Deleted'				=> 'datetime',
@@ -16,7 +16,7 @@
 		var $DBTable = 'DocumentVersions';
 
 		public static function &get($id = false) {
-			return self::_get(__CLASS__, $id);
+			return self::_getSingleton(__CLASS__, $id);
 		}
 
 		function setProperty($name, $value) {

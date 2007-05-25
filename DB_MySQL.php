@@ -101,31 +101,22 @@
 		
 		function __destruct() {
 			if (!$this->_profileQueries or empty($this->_queryLog)) return;
+
+			// TODO: finish ImpTable conversion
+			include_once("ImpUtils/ImpTable.php");
 			
 			uasort($this->_queryLog, create_function('$a,$b', 'return strcmp($b["Count"], $a["Count"]);'));
 
-			print '<div id="DB_MySQL_Query_Summary"><table class="Report"><caption>DB_MySQL Queries</caption>';
-			foreach ($this->_queryLog as $q => $s) {
-				print "<tr>";
-				
-				echo "<td>", htmlspecialchars($q), "</td>";
-				echo '<td>', number_format($s['Count']), "</td>";
-				echo '<td>', number_format($s['Time'], 4), "</td>";
-				echo '<td>', number_format($s['Time'] / $s['Count'], 4), "</td>";
-				
-				print "</tr>\n";
-			}
-			print '</table></div>';
-
+			$QueryTable = new ImpTable($this->_queryLog);
+			$QueryTable->Attributes['id'] = 'DB_MySQL_Query_Summary';
+			$QueryTable->Caption = __class__ . " Queries";
+			$QueryTable->ColumnHeaders = array(
+		    "Query" => array("text" => "SQL Statement", "sortable" => true),
+		    "Count" => array("text" => "Count", "sortable" => true, "formatter" => "numberFormatter"),
+		    "Time"  => array("text" => "Time", "sortable" => true, "formatter" => "numberFormatter"),
+		    "Cost"  => array("text" => "Cost", "sortable" => true, "formatter" => "numberFormatter")			
+			);
 			?>			
-					<script>
-						if (!document.YAHOO) {
-							document.write('<link type="text/css" rel="stylesheet" href="http://yui.yahooapis.com/2.2.0/build/datatable/assets/datatable.css" />');
-							document.write('<script type="text/javascript" src="http://yui.yahooapis.com/2.2.0/build/yahoo-dom-event/yahoo-dom-event.js"><' + '/script>');
-							document.write('<script type="text/javascript" src="http://yui.yahooapis.com/2.2.0/build/datasource/datasource-beta-min.js"><' + '/script>');
-							document.write('<script type="text/javascript" src="http://yui.yahooapis.com/2.2.0/build/datatable/datatable-beta-min.js"><' + '/script>');
-						}
-					</script>
 					<style>
 						#DB_MySQL_Query_Summary {
 							font-family: sans-serif ! important;
@@ -153,20 +144,10 @@
 							elCell.style.fontFamily = "monospace ! important";
 							elCell.style.font = "9px ProFont";
 							elCell.innerHTML = oData;
-						}
-					
-						var DB_MySQL_Query_Summary_ColumnHeaders = [
-						    {key:"Query", text:"SQL Statement", sortable:true},
-						    {key:"Count", text:"Count", sortable:true, formatter:numberFormatter},
-						    {key:"Time", 	text:"Time", sortable:true, formatter:numberFormatter},
-						    {key:"Cost", 	text:"Cost", sortable:true, formatter:numberFormatter}
-						];
-
-						var DB_MySQL_Query_Summary_ColumnSet = new YAHOO.widget.ColumnSet(DB_MySQL_Query_Summary_ColumnHeaders);
-						
-						var DB_MySQL_Query_Summary_DataTable = new YAHOO.widget.DataTable("DB_MySQL_Query_Summary", DB_MySQL_Query_Summary_ColumnSet); 
+						}	
 					</script>
 			<?
+				$QueryTable->generate();
 		}
 
 		function displayQueries($b = true) {
@@ -180,10 +161,6 @@
 
 			if ($b) {
 				$this->_displayQueries = $b;
-			}
-
-			if ($b and !function_exists("micro_time")) {
-				require_once("ImpUtils/profiling.php");
 			}
 		}
 		
@@ -201,7 +178,7 @@
 
 		function _startTimer() {
 			if (!$this->_profileQueries) return;
-			$this->_queryStartTime = micro_time();
+			$this->_queryStartTime = microtime(true);
 
 			if ($this->_extendedProfiling) {
 				$this->_initialSessionStatus = $this->getSessionStatus();
@@ -216,7 +193,7 @@
 				return false;
 			}
 
-			$n = micro_time() - $this->_queryStartTime;
+			$n = microtime(true) - $this->_queryStartTime;
 			$this->_queryCount++;
 			$this->_cummulativeQueryTime += $n;
 			if (!isset($this->_queryLog[$sql])) {

@@ -1,27 +1,37 @@
 <?php
 		/*
-		 * A subclass for objects which closely track database tables
-		 *
-		 * New-style serialization syntax:
-		 *	- DB column names must match property names exactly
-		 *	- Every DBObject *must* have a single, integer ID (most likely an INTEGER AUTO_INCREMENT PRIMARY KEY column)
-		 *	- Arrays:
-		 *			Properties = object property name => type
-		 *			FormFields = fieldnames shown to the user
-		 *			RequiredFormFields = fields which the user must enter
-		 *
-		 */
+			A subclass for objects which closely track database tables
+		 
+			New-style serialization syntax:
+			 	- DB column names must match property names exactly
+			  - Every DBObject *must* have a single, integer ID (most likely
+			    an INTEGER AUTO_INCREMENT PRIMARY KEY column)
+			  - Properties is an array. The key is the property name; the
+					value is either a string (shorthand for the property's type) or
+					an array:
+						type      => property type (integer, string, boolean, timestamp, datetime/date, set, enum or object)
+						class     => name of a PHP class, only necessary if the class name is different than the property name
+						formfield => boolean indicating whether this property corresponds directly to a form field						
+						required  => boolean indicating whether this is a required form field
+						lazy			=> boolean indicating whether this should be loaded on demand
+						
+			TODO: add support for default values
+			TODO: add support for form validation information
+		 */                                             
 
 		abstract class DBObject {	
-			public $ID              = false;
-			public $DBTable;
-			private $_trackChanges  = false;
-			private $_initialValues = array();
-			private static $_instances;
+			public $ID;
+			protected $DBTable;
+			protected $Properties;
+			protected $_trackChanges   = false;
+			protected $_initialValues  = array();
+			protected $_lazyObjects		 = array();
+			protected $_collections			= array();
+			private static $_instances = array();
 			
 			abstract public static function &get($id = false);
 			
-			protected static function &_get($class, $id = false) {
+			protected static function &_getSingleton($class, $id = false) {
 				global $DB;
 				
 				if (empty($id)) {
@@ -32,14 +42,14 @@
 
 				if (is_array($id)) {					
 					$objs = array();
-					
+
 					$ObjData = $DB->query(call_user_func(array($class, '_generateSelect'), get_class_var($class, 'DBTable'), get_class_var($class, 'Properties'), "ID IN (" . implode(', ', $id) . ")"));
 					
 					foreach ($ObjData as $d) {
 						$id = $d['ID'];
 						
 						if (!isset(self::$_instances[$class][$id])) {
-							self::$_instances[$class][$id] =& new $class($id);
+							self::$_instances[$class][$id] =& new $class($d);
 						}
 						
 						$objs[] =& self::$_instances[$class][$id];
@@ -58,6 +68,10 @@
 			protected function __construct($ID = false) {
 				global $DB;
 				assert(!empty($this->Properties));
+				// CHANGE: these check to make sure old values have been removed
+				assert(!isset($this->_classOverrides));
+				// TODO: nuke old FormFields array: assert(!isset($this->FormFields));
+				assert(!isset($this->RequiredFormFields	));
 
 				if (isset($ID) and is_array($ID)) {
 					$this->setProperties($ID);
@@ -76,8 +90,15 @@
 						$this->setProperties($Q[0]);
 					}
 				} else {
-					foreach ($this->Properties as $Name => $Type) {
+					foreach ($this->Properties as $Name => $def) {
 						if (isset($this->$Name)) continue; // Ignore any values which have already been defined
+
+						if (is_array($def)) {
+							assert(isset($def['type']));
+							$Type =& $def['type'];
+						} else {
+							$Type =& $def;
+						}
 
 						switch ($Type) {
 							case "datetime":
@@ -88,26 +109,70 @@
 							case "string":
 								$this->$Name = isset($this->_defaultValues[$Name]) ? $this->_defaultValues[$Name] : '';
 								break;
-
-							case "object":
-							default:
-								$this->$Name = false;
+								
+							// CHANGE: default is now undefined rather than false so we can generate proper SQL NULLs
 						}
 					}
 				}
-
-				foreach ($this->Properties as $Name => $Type) {
-					$this->_initialValues[$Name] = $this->$Name;
+			}
+			
+			public function __isset($p) {
+				if (array_key_exists($p, $this->_lazyObjects) or isset($this->$p)) {
+					return true;
+				} else {
+					return false;
 				}
+			}
+	
+			public function __get($p) {
+				if (isset($this->_lazyObjects[$p])) {
+					$this->_lazyLoad($p);
+					return $this->$p;
+				} elseif (isset($this->_collections[$p])) {
+					die("Loading collection!"); // FIXME
+				} elseif (isset($this->$p)) {
+					return $this->$p;
+				} else {
+					trigger_error("Attempted to get invalid property $p!", E_USER_ERROR);
+				}
+			}
+
+			public function __set($p, $v) {
+				if (array_key_exists($p, $this->Properties)) {
+					if (!isset($this->_initialValues[$p])) {
+						$this->_initialValues[$p] = $v;
+					}
+					$this->$p = $v;
+				} elseif (isset($this->$p)) {
+					$this->$p = $v;
+				} else {
+					trigger_error("Attempted to set invalid property $p to $v!", E_USER_ERROR);
+				}
+			}
+			
+			private function _lazyLoad($p) {
+				assert(isset($this->ID));
+				assert(isset($this->_lazyObjects[$p]));
+				$this->$p = call_user_func(array($this->_lazyObjects[$p]['Class'], "get"), $this->_lazyObjects[$p]['ID']);
+				$this->_initialValues[$p] = $this->$p;
+				unset($this->_lazyObjects[$p]);
 			}
 			
 			protected static function _generateSelect($DBTable, $Properties, $Constraints) {
 				assert(!empty($Constraints));
 				
 				$SQL = new ImpSQLBuilder($DBTable);
+				$SQL->addColumn('ID', 'integer');
 
-				foreach ($Properties as $name => $type) {
-					$SQL->addColumn($name, $type);
+				foreach ($Properties as $name => $def) {
+					if (is_array($def)) {
+						assert(isset($def['type']));
+						if ($def['type'] != 'collection') {
+							$SQL->addColumn($name, $def['type']);
+						}
+					} else {	
+						$SQL->addColumn($name, $def);
+					}
 				}
 
 				if (is_array($Constraints)) {
@@ -122,7 +187,7 @@
 
 			public function save() {
 				global $DB;
-
+				die("FIXME: NOT IMPLEMENTED");
 				$Q = new ImpSQLBuilder($this->DBTable);
 
 				foreach ($this->Properties as $P => $Type) {
@@ -200,16 +265,12 @@
 				$this->ID = $ID;
 			}
 
-			public function setUser (&$User) {
-				// Sets a reference to the passed User object
-				assert(is_object($User));
-				assert((get_class($User) == "user") or is_subclass_of($User, "User"));
-
-				$this->User =& $User;
-			}
-
 			public function setProperty($name, $value) {
 				switch ($name) {
+					case "ID":
+						$this->ID = intval($value);
+						break;
+					
 					case "StartDate":
 					case "EndDate":
 					case "Created":
@@ -217,39 +278,53 @@
 						settype($value, "integer"); // All dates are stored as time_t values
 
 					default:
-						// We only accept updates for official properties:
+						if (!isset($this->Properties[$name])) {
+							trigger_error(get_class($this) . "::setProperty() called for undefined property $name", E_USER_ERROR);
+						}
+						
+						if (is_array($this->Properties[$name])) {
+							$PropertyType = $this->Properties[$name]['type'];
+						} else {
+							$PropertyType = $this->Properties[$name];
+						}
 
-						if (isset($this->Properties[$name]) or isset($this->$name)) {
-							if ($this->Properties[$name] == "object") {
+						switch ($PropertyType) {
+							case "collection":
+								die("Attempted to redefine the $name collection!");
+								break;
+								
+							case "object":
 								if (empty($value)) {
 									$this->$name = false;
 								} else {
 									if (is_object($value)) {
 										$this->$name = $value;
+										break;
+									}
+									
+									$class = !empty($this->Properties[$name]['class']) ? $this->Properties[$name]['class'] : $name;
+									
+									if (isset($this->Properties[$name]['lazy']) and $this->Properties[$name]['lazy']) {
+										$this->_lazyObjects[$name]['ID'] = intval($value);
+										$this->_lazyObjects[$name]['Class'] = $class;
 									} else {
-										if (!empty($this->_classOverrides[$name])) {
-											$this->$name = call_user_func(array($this->_classOverrides[$name], "get"), $value);
-										} else {
-											class_exists($name) or die("Couldn't set $name: the $name class does not exist");
-											$this->$name = call_user_func(array($name, "get"), $value);
-										}
+										class_exists($class) or die("Couldn't set $name: the $name class does not exist");
+										$this->$name = call_user_func(array($class, "get"), $value);
 									}
 								}
+								
+								break;
 
-								// BUG: icky temporary variable:
-								$oid = "{$name}ID";
-								$this->$oid = $value;
-
-							} elseif ($this->Properties[$name] == "boolean") {
+							case "boolean":
 								$this->$name = is_bool($value) ? $value : ($value == 1);
-							} elseif ($this->Properties[$name] == "integer") {
+								break;
+							
+							case "integer":
+								$this->$name = intval($value);
+								break;
+
+							default:
 								$this->$name = $value;
-								settype($this->name, "integer");
-							} else {
-								$this->$name = $value;
-							}
-						} else {
-							trigger_error(get_class($this) . "::setProperty() called for undefined property $name", E_USER_WARNING);
 						}
 				}
 

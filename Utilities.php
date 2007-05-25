@@ -43,6 +43,13 @@
 		if (error_reporting() & $error == 0) {
 			return; // Ignore the error
 		}
+		
+		// Create a utility function which will generate links to open the current file in TextMate assuming the request came from 127.0.0.1:
+		if ($_SERVER["REMOTE_ADDR"] == "127.0.0.1") {
+			$generate_source_link = create_function('$file, $line', 'return "<code><a href=\"txmt://open?url=file://$file&line=$line\">$file:$line</a></code>";');
+		} else {
+			$generate_source_link = create_function('$file, $line', 'return "<code>$file:$line</code>";');
+		}
 
 		// If IMP_DEBUG is defined, use it's value instead so that any
 		// error will halt in debugging mode
@@ -74,7 +81,7 @@
 		}
 
 		if (defined("IMP_DEBUG") and IMP_DEBUG) {
-			print "<p><b>$ErrorType</b> at <code>$file</code>:$line:</p><code>$message</code>";
+			print "<p><b>$ErrorType</b> at " . $generate_source_link($file, $line) . ":</p><code>$message</code>";
 			if (mysql_errno()) {
 				print "<p>Last MySQL error #" . mysql_errno() . ": <code>" . mysql_error() . "</code></p>";
 			}
@@ -103,7 +110,8 @@
 						$bt_args = array();
 					}
 
-					print "\t<li><code>$bt_class$bt_type$bt_function(" . implode(', ', array_map('var_export_string', $bt_args)) . ")</code> at $bt_file:$bt_line</li>\n";
+
+					print "\t<li><code>$bt_class$bt_type$bt_function(" . implode(', ', array_map('var_export_string', $bt_args)) . ")</code> at " . $generate_source_link($bt_file, $bt_line) . "</li>\n";
 				}
 				print '</ol>';
 			}

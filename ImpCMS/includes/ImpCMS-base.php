@@ -2,8 +2,6 @@
 /**
 * The main ImpCMS class
 *
-* $ProjectHeader: ImpCMS 0.3 Fri, 05 Apr 2002 23:34:31 -0800 chris $
-*
 * This class handles site-configuration, database connections, access levels
 * and provides methods to create all other CMS objects.
 *
@@ -14,14 +12,14 @@
 *
 */
 
-class ImpCMS extends Singleton {
+class ImpCMS extends ImpSingleton {
 		protected $AdminAccess = false;
  		protected $ShowInvisibleDocuments;
 		protected $ReadOnly;
 		protected $DB; // MySQL database object
 		
 		static public function &getInstance() {
-			return Singleton::getInstance(__CLASS__);
+			return ImpSingleton::getInstance(__CLASS__);
 		}
 
 		protected function __construct() {

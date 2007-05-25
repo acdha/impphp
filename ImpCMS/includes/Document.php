@@ -1,12 +1,13 @@
 <?php
 	class Document extends DBObject {
 		var $Properties = array(
-			'Parent'					=> 'object',
-			'Title'						=> 'string',
-			'TextID'					=> 'string',
-			'Container'				=> 'string',
-			'Visible'					=> 'boolean',
-			'DisplayVersion'	=> 'integer'
+			'Parent'         => array('type' => 'object', 'class' => 'Document', 'lazy' => true),
+			'Title'          => array('type' => 'string', 'formfield' => true),
+			'TextID'         => array('type' => 'string', 'formfield' => true),
+			'Container'      => array('type' => 'string', 'formfield' => true),
+			'Container'      => 'string',
+			'Visible'        => 'boolean',
+			'DisplayVersion' => array('type' => 'object', 'class' => 'DocumentVersion', 'lazy' => true)
 		);
 
 		var $FormFields = array(
@@ -15,16 +16,12 @@
 			'Container'
 		);
 
-		var $_classOverrides = array(
-			'DisplayVersion'	=> 'DocumentVersion',
-			'Parent'					=> 'Document'
-		);
-
 		var $DBTable			 = 'Documents';
 		var $_trackChanges = true;
+		var $Children;
 
 		public static function &get($id = false) {
-			return self::_get(__CLASS__, $id);
+			return self::_getSingleton(__CLASS__, $id);
 		}
 		
 		protected function __construct($id = false) {
@@ -43,19 +40,15 @@
 			return $this->Visible;
 		}
 
-		function getBody($Revision = false) {
+		function getBody() {
 			global $DB;
 
-			if (!empty($Revision)) {
-				error_log("STALE CODE: getBody called with a version");
-			}
-
-			if (!$this->Visible) {
+			if (empty($this->Visible)) {
 				error_log("Client {$_SERVER['REMOTE_ADDR']} requested invisible document #{$this->ID}");
-				return '<p class="Notice">This document is currently unavailable</p>';
+				return '<p class="Notice">This document is being edited</p>';
 			}
 
-			if (empty($this->DisplayVersion)) {
+			if (!isset($this->DisplayVersion)) {
 				error_log("Client {$_SERVER['REMOTE_ADDR']} requested document #{$this->ID} which has no available revision in DocumentVersions");
 				return '<p class="Notice">This document is currently unavailable</p>';
 			} else {
@@ -85,10 +78,10 @@
 		function getVersion($Version = false) {
 			$Version = intval($Version);
 
-			if (empty($Version) and !empty($this->DisplayVersion)) {
-				return new DocumentVersion($this->DisplayVersion);
+			if (empty($Version) and isset($this->DisplayVersion)) {
+				return $this->DisplayVersion;
 			} elseif (!empty($Version)) {
-				return new DocumentVersion($Version);
+				return DocumentVersion::get($Version);
 			} else {
 				return false;
 			}
@@ -146,9 +139,9 @@
 
 			if (empty($this->ID))	return;
 
-			// BUG: Ugly - this will load *way* too much until we get a proper on-demand load going:
-			// BUG: this needs to use the defined sort key settings for this document
-			// BUG: we have a defined set of visibility rules for these things. Use them!
+			// FIXME: Ugly - this will load *way* too much until we get a proper on-demand load going:
+			// FIXME: this needs to use the defined sort key settings for this document
+			// FIXME: we have a defined set of visibility rules for these things. Use them!
 
 			$children = $DB->query("SELECT ID FROM Documents WHERE Parent = $this->ID" . ($ShowAll ? "" : " AND Visible=1") . ($limit ? " LIMIT $limit" : "") );
 
@@ -158,8 +151,8 @@
 		}
 
 		function loadResources() {
-			// BUG: Ugly - this will load *way* too much until we get a proper on-demand load going:
-			// BUG: this needs to use the defined sort key settings for this document
+			// FIXME: Ugly - this will load *way* too much until we get a proper on-demand load going:
+			// FIXME: this needs to use the defined sort key settings for this document
 
 			$resources = $DB->query("SELECT ID FROM Resources WHERE DocumentID = $this->ID");
 

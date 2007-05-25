@@ -34,7 +34,7 @@
 
 		function dbSafe($convert_links = true) {
 			/*
-			 * BUG: this function's name is misleading
+			 * FIXME: this function's name is misleading
 			 * returns a string containing the source in a form safe to be stored in the database.
 			 * plain text has paragraph formatting preserved and [optionally] will have http: and ftp: URLs and
 			 * email addresses converted into hyperlinks

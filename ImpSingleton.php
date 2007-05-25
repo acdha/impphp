@@ -1,6 +1,6 @@
 <?php
 
-abstract class Singleton {
+abstract class ImpSingleton {
   private function __construct() {}
   private function __clone() { 
 		trigger_error('It is impossible to clone a singleton', E_USER_ERROR);
@@ -15,16 +15,16 @@ abstract class Singleton {
 			self::$Instances[$ClassName] = &new $ClassName();
 			return self::$Instances[$ClassName];
 		} else {
-			trigger_error('Singleton::getInstance() called without a class or existing instance!', E_USER_ERROR);
+			trigger_error('ImpSingleton::getInstance() called without a class or existing instance!', E_USER_ERROR);
 		}
   }
 }
 
 
-function __autoload($ClassName) {
+function ImpSingletonAutoLoader($ClassName) {
   include_once("$ClassName.php");
 
-	if (is_subclass_of($ClassName, 'Singleton')) {
+	if (is_subclass_of($ClassName, 'ImpSingleton')) {
 		call_user_func(array($ClassName, 'getInstance'), $ClassName);
 	}
 }

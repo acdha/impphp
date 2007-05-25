@@ -15,7 +15,7 @@
 	 */
 
 
-	class EventDispatcher {
+	abstract class EventDispatcher {
 		function EventDispatcher(&$ImpCMS) {
 			assert(is_object($ImpCMS));
 

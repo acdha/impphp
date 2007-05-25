@@ -21,10 +21,10 @@
 	*/
 
 	require_once("ImpUtils/Utilities.php");
-	require_once("ImpUtils/DB-MySQL.php");
+	require_once("ImpUtils/DB_MySQL.php");
 	require_once("ImpUtils/DBObject.php");
 	require_once("ImpUtils/ImpSQLBuilder.php");
-	require_once('ImpUtils/Singleton.php');
+	require_once('ImpUtils/ImpSingleton.php');
 
 	require_once("ImpUtils/ImpCMS/includes/ImpCMS-base.php");
 	require_once("ImpUtils/ImpCMS/includes/Document.php");
