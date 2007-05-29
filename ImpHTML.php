@@ -338,5 +338,12 @@
 			return htmlspecialchars(str_replace(" ", "_", $s));
 		}
 
+		public static function displayErrors($Errors) {
+			assert(is_array($Errors));
+
+			if (!empty($Errors)) {
+				echo '<ul class="Errors"><li>', implode('</li><li>', $Errors), '</li></ul>', "\n";
+			}
+		}
 	}
 ?>
