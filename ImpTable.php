@@ -1,62 +1,85 @@
 <?php
+	/*
+		Simple HTML table generation - this currently is implemented using YUI DataTable.
+
+		Basic Usage:
+			$IT = new ImpTable($data_array);
+			$IT->generate();
+
+		Customization:
+			$IT->Caption = "My ImpTable!";
+			$IT->Attributes['id'] = 'My_Custom_CSS_ID';
+
+			$QueryTable->AutoSort('aColumn', 'Descending');
+
+			$QueryTable->ColumnHeaders = array(
+				'aColumn' => array('text' => 'Column Name', 'type'=> 'number', 'sortable' => true, 'formatter' => 'myCustomYUIFormatter'),
+			);
+
+	*/
+
+
 	class ImpTable {
-		var $Data							 = array();
-		var $CSS							 = array("Class" => "ImpTable");
+		var $Data              = array();
+		var $Attributes        = array("class" => "ImpTable");
+		var $DefaultSortOrder  = "Ascending";
+		var $DefaultSortKey;
+		protected $_SortKey;
+		protected $_SortOrder;
 
-		var $generateHeaders	 = true;
-		var $generateSortLinks = true;
-
-		var $DefaultSortOrder	 = "Ascending";
-		var $_SortKey;
-		var $_SortOrder;
-
-		function ImpTable($Data = false) {
-			if (!empty($Data)) {
-				if (is_array($Data)) {
-					$this->Data = $Data;
-				} else {
-					trigger_error("ImpHTML::ImpTable() called with non-array data!", E_USER_ERROR);
-				}
-			}
-		}
-
-		function _compare($k1, $k2) {
-			return strnatcasecmp($k1[$this->_SortKey], $k2[$this->_SortKey]);
-		}
-
-		function _reverse_compare($k1, $k2) {
-			return -1 * strnatcasecmp($k1[$this->_SortKey], $k2[$this->_SortKey]);
+		function ImpTable(array $Data = array()) {
+			$this->Data = $Data;
 		}
 
 		function AutoSort($Key = false, $Order = false) {
 			assert(is_array($this->Data));
 
-			if (empty($Key)) {
-				if (!empty($_REQUEST['SortKey'])) {
-					$this->_SortKey = $_REQUEST['SortKey'];
-				} elseif (!empty($this->DefaultSortKey)) {
-					$this->_SortKey = $this->DefaultSortKey;
-				} else {
-					return;
-				}
+			// CHANGED: Simplifed the AutoSort() logic
+			if (empty($Key) and !empty($_REQUEST['SortKey'])) {
+				$this->_SortKey = $_REQUEST['SortKey'];
 			}
 
-			if (empty($Order)) {
-				if (!empty($_REQUEST['SortOrder'])) {
-					$this->_SortOrder = $_REQUEST['SortOrder'];
-				} else {
-					return;
-				}
+			if (empty($Order) and !empty($_REQUEST['SortOrder'])) {
+				$this->_SortOrder = $_REQUEST['SortOrder'];
 			}
 
 			if (empty($this->_SortOrder)) {
 				$this->_SortOrder = $this->DefaultSortOrder;
 			}
+
 			$this->_SortOrder = $this->_SortOrder == "Descending" ? "Descending" : "Ascending";
+
+			if (empty($this->_SortKey)) {
+				$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : array_first(array_keys($this->Data));
+			}
+
+			assert(isset($this->Data[0][$this->_SortKey]));
 
 			reset($this->Data);
 			if (!empty($this->_SortKey) and array_key_exists($this->_SortKey, current(($this->Data)))) {
 				usort($this->Data, array($this, ($this->_SortOrder == "Ascending" ? "_compare" : "_reverse_compare")));
+			}
+		}
+
+		protected function _compare($k1, $k2) {
+			return strnatcasecmp($k1[$this->_SortKey], $k2[$this->_SortKey]);
+		}
+		protected function _reverse_compare($k1, $k2) {
+			return -1 * strnatcasecmp($k1[$this->_SortKey], $k2[$this->_SortKey]);
+		}
+
+		function __get($p) {
+			switch($p) {
+				case "ColumnHeaders":
+					if (!empty($this->ColumnHeaders)) {
+						return $this->ColumnHeaders;
+					} else {
+						reset($this->Data);
+						return array_combine(array_keys(current($this->Data)), array_keys(current($this->Data)));
+					}
+
+				default:
+					return $this->$p;
 			}
 		}
 
@@ -69,58 +92,83 @@
 			reset($this->Data);
 			assert(is_array(current($this->Data)));
 
-			print "<table";
-			foreach ($this->CSS as $k => $v) {
-				print ' ' . strtolower($k) . "=\"$v\"";
-			}
-			print ">\n";
+			$this->AutoSort();
 
-			if (!empty($this->Caption)) {
-				print "\t<caption>" . $this->Caption . "</caption>\n";
+			if (empty($this->Attributes['id'])) {
+				$this->Attributes['id'] = uniqid('ImpTable_');
 			}
 
-			if ($this->generateHeaders) {
-				print "\t<tr>\n";
+			$Headers = $this->ColumnHeaders;
 
-				if (!empty($this->ColumnHeaders)) {
-					$Headers = $this->ColumnHeaders;
-				} else {
-					reset($this->Data);
-					$Headers = array_keys(current($this->Data));
+			$JSName = ImpHTML::makeSafeJavaScriptName($this->Attributes['id']);
+?>
+			<script>
+				{
+					// TODO: generalize this into a JavaScript equivalent to require_once()
+					document.write('<link type="text/css" rel="stylesheet" href="http://yui.yahooapis.com/2.2.2/build/datatable/assets/datatable.css" />');
 				}
 
-				foreach ($Headers as $h) {
-					print "\t\t<th>";
+				document.write('<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/yahoo-dom-event/yahoo-dom-event.js"><' + '/script>');
+				document.write('<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/datasource/datasource-beta-min.js"><' + '/script>');
+				document.write('<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/datatable/datatable-beta-min.js"><' + '/script>');
+			</script>
 
-					if ($this->generateSortLinks) {
-						if (!empty($_REQUEST['SortKey']) and !empty($_REQUEST['SortOrder']) and $_REQUEST['SortKey'] == $h) {
-							$_REQUEST['SortOrder'] = $_REQUEST['SortOrder'] == "Ascending" ? "Descending" : "Ascending";
-						} else {
-							$_REQUEST['SortOrder'] = $this->DefaultSortOrder;
+			<div <?=ImpHTML::attributeImplode($this->Attributes)?>></div>
+
+			<script type="text/javascript">
+				var <?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
+				<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
+				<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };
+
+				var <?=$JSName?>_ColumnSet = new YAHOO.widget.ColumnSet([<?
+					foreach($Headers as $name => $display) {
+						if (is_array($display)) {
+							echo json_encode(array_merge(array('key' => $name, 'text' => $name, 'sortable' => true), $display)), ",\n";
+						}	else {
+							echo '{key:"', $name, '",text:"', $display, '", sortable:true},';
 						}
-						$_REQUEST['SortKey'] = $h;
+					}
+				?>]);
 
-						print "<a href=\"{$_SERVER['PHP_SELF']}?" . ImpHTML::generateQueryStringFromArray($_REQUEST) . "\">" . html_encode($h) . "</a>";
-					} else {
-						print html_encode($h);
+				<?
+					//FIXME: Ugly hack around the fact that we're using json_encode for all of the ColumnSet options but need to pass function references to some of them and those need to be barewords rather than quoted strings
+					foreach ($Headers as $name => $display) {
+						if (!empty($display['sortOptions']['ascFunction'])) {
+							echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
+							echo $JSName, '_ColumnSet.flat[i].ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
+							echo $JSName, '_ColumnSet.flat[i].descFunction=', $display['sortOptions']['descFunction'], ";\n";
+							echo $JSName, '_ColumnSet.flat[i].sortOptions.ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
+							echo $JSName, '_ColumnSet.flat[i].sortOptions.descFunction=', $display['sortOptions']['descFunction'], ";\n";
+							echo "};\n";
+						}
+
+						if(!empty($display['formatter'])) {
+							echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
+							echo $JSName, '_ColumnSet.flat[i].formatter=', $display['formatter'], ";\n";
+							echo "};\n";
+						}
 					}
 
-					print "</th>\n";
-				}
+				?>
 
-				print "\t</tr>\n";
-			}
-
-
-			foreach ($this->Data as $id => $D) {
-				print "\t<tr id=\"$id\">\n";
-				foreach ($D as $k => $v) {
-					print "\t\t<td class=\"" . ImpHTML::makeSafeCSSName($k) . "\">" . html_encode($v) . "</td>\n";
-				}
-				print "\t</tr>\n";
-			}
-
-			print "</table>\n";
+				var <?=$JSName?>_DataTable = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=$JSName?>_ColumnSet, <?=$JSName?>_DataSource, <?=json_encode($this->_getDataTableOptions())?>);
+			</script>
+<?
 		}
+
+		protected function _getDataTableOptions() {
+			$opts = array();
+
+			if (!empty($this->Caption)) {
+				$opts['caption'] = $this->Caption;
+			}
+
+			if (!empty($this->DefaultSortKey)) {
+				$opts['sortedBy'] = array('colKey' => $this->DefaultSortKey, 'dir' => $this->DefaultSortOrder == 'Ascending' ? 'asc' : 'desc');
+			}
+
+			return $opts;
+		}
+
 	};
 ?>
