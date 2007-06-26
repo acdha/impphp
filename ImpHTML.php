@@ -2,17 +2,6 @@
 	class ImpHTML {
 		var $original;
 
-		// Static methods for one-line convenience:
-		public static function makeText($Source) {
-			$t = new ImpHTML($Source);
-			return $t->convertToText();
-		}
-
-		public static function makeHTML($Source) {
-			$t = new ImpHTML($Source);
-			return $t->convertToHTML();
-		}
-
 		function __construct($source) {
 			if (is_array($source)) {
 				$this->original = implode("\n", $source);
@@ -23,13 +12,6 @@
 			$this->hasBlockFormatting = preg_match('/(?=<P|<BR|<LI|<TABLE|<DIV|<DD|<HR)/i', $this->original);
 			$this->hasDisplayFormatting = preg_match('/(?=<U|<B|<I|<IMG|<FONT|&amp;|&quote;|&#153;|<SPAN)/i', $this->original);
 			$this->hasLinks = preg_match('/(?=</A[ \/>]+)/i', $this->original);
-		}
-
-		public static function convertTextToHTML($input) {
-			$output = preg_replace('/(?<=\s)(\w+@[a-z0-9-]+\.+[a-z][a-z][a-z]?)/i', '<a href="mailto:\1">\1</a>', $input);
-			$output = preg_replace('/(http:[^\s]+)/i', '<a href="\1">\1</A>', $output);
-			$output = preg_replace('/(ftp:[^\s]+)/i', '<a href="\1">\1</A>', $output);
-			return nl2br($output);
 		}
 
 		function dbSafe($convert_links = true) {
@@ -51,7 +33,7 @@
 			}
 
 			if (!$this->hasLinks && !$this->hasDisplayFormatting && !$this->hasBlockFormatting && $convert_links) {
-				$output = preg_replace('/(\"[^\\\"]+\"|[^\\	\(\)\<\>@,;:\"]+@[a-z0-9-]+\.+[a-z][a-z][a-z]?)/i', '<A HREF="mailto:\1">\1</A>', $output);
+				$output = preg_replace('/(\"[^\\\"]+\"|[^\\ \(\)\<\>@,;:\"]+@[a-z0-9-]+\.+[a-z][a-z][a-z]?)/i', '<A HREF="mailto:\1">\1</A>', $output);
 				$output = preg_replace('/(http:[^ ]+)/i', '<a href="\1" target="_new">\1</a>', $output);
 				$output = preg_replace('/(ftp:[^ ]+)/i', '<a href="\1" target="_new">\1</a>', $output);
 			}
@@ -69,6 +51,24 @@
 			} else {
 				return $this->original;
 			}
+		}
+
+		// Static methods for one-line convenience:
+		public static function makeText($Source) {
+			$t = new ImpHTML($Source);
+			return $t->convertToText();
+		}
+
+		public static function makeHTML($Source) {
+			$t = new ImpHTML($Source);
+			return $t->convertToHTML();
+		}
+
+		public static function convertTextToHTML($input) {
+			$output = preg_replace('/(?<=\s)(\w+@[a-z0-9-]+\.+[a-z][a-z][a-z]?)/i', '<a href="mailto:\1">\1</a>', $input);
+			$output = preg_replace('/(http:[^\s]+)/i', '<a href="\1">\1</A>', $output);
+			$output = preg_replace('/(ftp:[^\s]+)/i', '<a href="\1">\1</A>', $output);
+			return nl2br($output);
 		}
 
 		public static function generateQueryStringFromArray($A = false) {
@@ -150,7 +150,7 @@
 
 						mysql> describe Transactions Status;
 						+--------+------------------------------------------------------+------+-----+---------+-------+
-						| Field	| Type																								 | Null | Key | Default | Extra |
+						| Field | Type																								 | Null | Key | Default | Extra |
 						+--------+------------------------------------------------------+------+-----+---------+-------+
 						| Status | enum('Pending','Approved','Declined','System Error') |			|		 | Pending |			 |
 						+--------+------------------------------------------------------+------+-----+---------+-------+
@@ -201,7 +201,6 @@
 			return $html;
 		}
 
-		// TODO: clean up the generation code:
 		public static function generateDateSelect($name, $current_value = false) {
 			return ImpHTML::generateSelectFromTime($name, $current_value, true);
 		}
@@ -218,10 +217,10 @@
 			}
 
 			// Defaults: not all of these need to be specified:
-			$Year   = 0;
-			$Month  = 0;
-			$Day    = 0;
-			$Hour   = 0;
+			$Year		= 0;
+			$Month	= 0;
+			$Day		= 0;
+			$Hour		= 0;
 			$Minute = 0;
 			$Second = 0;
 
@@ -239,14 +238,14 @@
 
 			if (!$current_value) $current_value = time();
 
-			$CurYear  = date("Y", $current_value);
+			$CurYear	= date("Y", $current_value);
 			$CurMonth = date("m", $current_value);
-			$CurDay   = date("d", $current_value);
-			$CurHour  = date("H", $current_value);
-			$CurMin   = date("i", $current_value);
-			$CurSec   = date("s", $current_value);
+			$CurDay		= date("d", $current_value);
+			$CurHour	= date("H", $current_value);
+			$CurMin		= date("i", $current_value);
+			$CurSec		= date("s", $current_value);
 
-			$Months   = array(
+			$Months		= array(
 				'invalid month',
 				'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 			);
@@ -317,8 +316,8 @@
 		}
 
 		public static function makeSafeLink($URL, $Title) {
-			$Title  = htmlspecialchars($Title);
-			$URL    = htmlspecialchars(trim($URL));
+			$Title	= htmlspecialchars($Title);
+			$URL		= htmlspecialchars(trim($URL));
 			$uParts = @parse_url($URL);
 
 			if (
@@ -345,5 +344,17 @@
 				echo '<ul class="Errors"><li>', implode('</li><li>', $Errors), '</li></ul>', "\n";
 			}
 		}
+
+		public static function attributeImplode($a) {
+			 // Takes an input array and prints the key=value as HTML attributes:
+			 $r = array();
+
+			 foreach ($a as $k => $v) {
+				 $r[] = $k . '="' . $v . '"';
+			 }
+
+			 return implode(' ', $r);
+		 }
+
 	}
 ?>
