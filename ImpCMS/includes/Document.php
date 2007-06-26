@@ -1,35 +1,30 @@
 <?php
 	class Document extends DBObject {
-		var $Properties = array(
-			'Parent'         => array('type' => 'object', 'class' => 'Document', 'lazy' => true),
-			'Title'          => array('type' => 'string', 'formfield' => true),
+		protected $Properties = array(
+			'Parent'         => array('type' => 'object', 'class' => 'Document'),
+			'Title'          => array('type' => 'string', 'formfield' => true, 'required' => true),
 			'TextID'         => array('type' => 'string', 'formfield' => true),
 			'Container'      => array('type' => 'string', 'formfield' => true),
-			'Container'      => 'string',
 			'Visible'        => 'boolean',
-			'DisplayVersion' => array('type' => 'object', 'class' => 'DocumentVersion', 'lazy' => true)
+			'DisplayVersion' => array('type' => 'object', 'class' => 'DocumentVersion')
 		);
 
-		var $FormFields = array(
-			'Title',
-			'TextID',
-			'Container'
-		);
+		protected $DBTable			 = 'Documents';
+		protected $_trackChanges = true;
 
-		var $DBTable			 = 'Documents';
-		var $_trackChanges = true;
 		var $Children;
+		var $Versions;
 
 		public static function &get($id = false) {
-			return self::_getSingleton(__CLASS__, $id);
+			return self::_getInstance(__CLASS__, $id);
 		}
-		
-		protected function __construct($id = false) {
+
+		public function __construct($id = false) {
 			if (empty($id)) {
 				$this->Created	= time();
 				$this->Modified = time();
 			}
-			
+
 			parent::__construct($id);
 		}
 
@@ -65,11 +60,8 @@
 		function getVersions() {
 			global $DB;
 
-			if (empty($this->Versions)) {
-				$this->Versions = array();
-				foreach ($DB->queryValues("SELECT ID FROM DocumentVersions WHERE Document={$this->ID} AND Deleted IS NULL ORDER BY Modified") as $id) {
-					$this->Versions[] = new DocumentVersion($id);
-				}
+			if (!isset($this->Versions)) {
+				$this->Versions = DocumentVersion::get($DB->queryValues("SELECT ID FROM DocumentVersions WHERE Document={$this->ID} AND Deleted IS NULL ORDER BY Modified"));
 			}
 
 			return $this->Versions;
@@ -87,21 +79,37 @@
 			}
 		}
 
-		function setDisplayVersion($Version) {
-			global $DB;
-			$Version = intval($Version);
-			$this->setProperty("DisplayVersion", empty($Version) ? false : $Version );
+		function deleteVersion($Version) {
+			$V = is_object($Version) ? $Version : $this->getVersion($Version);
+
+			assert($V->Document->ID == $this->ID);
+			assert($V->Deleted == 0);
+
+			$V->Deleted = time();
+			$V->save();
+
+			if (!empty($this->DisplayVersion) and ($this->DisplayVersion->ID == $V->ID)) {
+				$this->setDisplayVersion(false);
+				$this->save();
+			}
 		}
 
 		/**
 			 * Returns an array of references to child Documents
 			 */
 		function getChildren($limit = false, $ShowAll = false) {
+			global $DB;
+
 			// Limit allows us to artificially restrict children to the first $limit according to the default sort order
+			if (empty($this->ID)) return;
 
 			// Only load if we haven't done so
 			if (!isset($this->Children)) {
-				$this->loadChildren($limit, $ShowAll);
+				// CHANGED: We now demand-load the expensive part of Documents (Body) and perform one query instead of many
+				// TODO: Make sure we avoid calling getChildren() where possible
+				// TODO: Change this to use DBObject::find() once that interface is mature
+				// TODO: this needs to use the defined child sort key settings for this document
+				$this->Children = Document::get($DB->queryValues("SELECT ID FROM Documents WHERE Parent = $this->ID" . ($ShowAll ? "" : " AND Visible=1") . ($limit ? " LIMIT $limit" : "")));
 			}
 
 			assert(is_array($this->Children));
@@ -113,8 +121,7 @@
 		 * Returns a Document object for the most recently modified child
 		 */
 		function getLastModifiedChild() {
-			$lmcID = $DB->queryValue("SELECT ID FROM Documents WHERE Parent = {$this->ID} AND Visible = 'True' ORDER BY Modified DESC LIMIT 1");
-			return Document::get($lmcID);
+			return Document::get($DB->queryValue("SELECT ID FROM Documents WHERE Parent = {$this->ID} AND Visible = 'True' ORDER BY Modified DESC LIMIT 1"));
 		}
 
 		/**
@@ -132,34 +139,5 @@
 		}
 
 
-		function loadChildren($limit = false, $ShowAll = false) {
-			global $DB;
-
-			$this->Children = array();
-
-			if (empty($this->ID))	return;
-
-			// FIXME: Ugly - this will load *way* too much until we get a proper on-demand load going:
-			// FIXME: this needs to use the defined sort key settings for this document
-			// FIXME: we have a defined set of visibility rules for these things. Use them!
-
-			$children = $DB->query("SELECT ID FROM Documents WHERE Parent = $this->ID" . ($ShowAll ? "" : " AND Visible=1") . ($limit ? " LIMIT $limit" : "") );
-
-			foreach ($children as $child) {
-				$this->Children[] = Document::get($child["ID"]); // Store a reference to avoid multiple copies floating around
-			}
-		}
-
-		function loadResources() {
-			// FIXME: Ugly - this will load *way* too much until we get a proper on-demand load going:
-			// FIXME: this needs to use the defined sort key settings for this document
-
-			$resources = $DB->query("SELECT ID FROM Resources WHERE DocumentID = $this->ID");
-
-			$this->Resources = array();
-			foreach ($resources as $resource) {
-				$this->Resources[] = new Resource($resource["ID"]); // Store a reference to avoid multiple copies floating around
-			}
-		}
 	}
 ?>

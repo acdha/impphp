@@ -1,8 +1,8 @@
 <?php
 	class DocumentVersion extends DBObject {
-		var $Properties = array(
-			'Document'			=> array('type' => 'object', 'lazy' => true),
-			'Creator'				=> array('type' => 'object', 'class' => 'User', 'lazy' => true),
+		protected $Properties = array(
+			'Document'			=> array('type' => 'object'),
+			'Creator'				=> array('type' => 'object', 'class' => 'User'),
 			'Created'				=> 'datetime',
 			'Modified'			=> 'timestamp',
 			'Deleted'				=> 'datetime',
@@ -13,10 +13,10 @@
 
 		protected $_trackChanges = true;
 		protected $_ignoreChanges = array('Body');
-		var $DBTable = 'DocumentVersions';
+		protected $DBTable = 'DocumentVersions';
 
 		public static function &get($id = false) {
-			return self::_getSingleton(__CLASS__, $id);
+			return self::_getInstance(__CLASS__, $id);
 		}
 
 		function setProperty($name, $value) {
@@ -34,7 +34,7 @@
 
 		function save() {
 			if (empty($this->Creator)) {
-				$this->Creator = $_SESSION['User']->ID;
+				$this->Creator = $_SESSION['User'];
 			}
 
 			return parent::save();
@@ -42,10 +42,11 @@
 
 		function saveAsNewVersion() {
 			unset($this->ID);
-			$this->Approved = false;
-			$this->Created = time();
+			$this->Created  = time();
 			$this->Modified = time();
-			$this->Comment = '';
+			$this->Approved = false;
+			$this->Comment  = '';
+			unset($this->Creator);
 		}
 
 	}
