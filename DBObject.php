@@ -111,14 +111,14 @@
 						$ID = intval($ID);
 
 						if (empty($ID)) {
-							$AppLog->log(get_class($this) . " constructor called with empty id $ID");
+							error_log(get_class($this) . " constructor called with empty id $ID");
 							return;
 						}
 
 						$Q = $DB->query($this->_generateSelect($this->DBTable, $this->Properties, "ID=$ID"));
 
 						if (count($Q) < 1) {
-							$AppLog->log(get_class($this) . " constructor called with non-existent id $ID");
+							error_log(get_class($this) . " constructor called with non-existent id $ID");
 							return;
 						} else {
 							assert(count($Q) == 1);

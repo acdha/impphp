@@ -532,7 +532,6 @@
 
 		function escapeString($str) {
 			// Returns $str with any characters which have special meaning to MySQL escaped
-			error_log("Call to deprecated escapeString() function");
 			return mysql_real_escape_string(strval($str), $this->Handle);
 		}
 
