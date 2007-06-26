@@ -183,33 +183,33 @@
 			foreach ($this->DataValues as $Key => $V) {
 				list($Value, $Type) = $V;
 
-				switch (strtolower($Type)) {
-					case "time":
-							// Unix timestamps get special treatment; strings get treated as normal strings
-						if (is_integer($Value)) {
-							$a[$Key] = ($Value == 0) ? "NULL" : "FROM_UNIXTIME($Value)";
+				if ((!isset($Value)) or ($Value === false )) {
+					$a[$Key] = 'NULL';
+				} else {
+					switch (strtolower($Type)) {
+						case "time":
+								// Unix timestamps get special treatment; strings get treated as normal strings
+							if (is_integer($Value)) {
+								$a[$Key] = ($Value == 0) ? "NULL" : "FROM_UNIXTIME($Value)";
+								break;
+							}
+
+						case 'set':
+						case 'enum':
+							if (is_array($Value)) {
+								$a[$Key] = "'" . mysql_real_escape_string(implode(',', $Value)) . "'";
+							} else {
+								$a[$Key] = "'" . mysql_real_escape_string($Value) . "'";
+							}
 							break;
-						}
 
-					case 'set':
-					case 'enum':
-						if (is_array($Value)) {
-							$a[$Key] = "'" . mysql_real_escape_string(implode(',', $Value)) . "'";
-						} else {
+						case "string":
 							$a[$Key] = "'" . mysql_real_escape_string($Value) . "'";
-						}
-						break;
+							break;
 
-					case "string":
-						$a[$Key] = "'" . mysql_real_escape_string($Value) . "'";		// TODO: DB-specific quoting
-						break;
-
-					case "general":
-						$a[$Key] = ($Value === false) ? "NULL" : $Value;
-						break;
-
-					default:
-						trigger_error("Unknown column type $Type (key = $Key)", E_USER_NOTICE);
+						default:
+							$a[$Key] = $Value;
+					}
 				}
 			}
 
@@ -287,16 +287,13 @@
 			}
 
 			if ($this->queryType == "SELECT") {
-
 				if (empty($this->CurrentPage)) {
 					return "LIMIT $this->PageSize";
 				} else {
 					return "LIMIT " . ($this->CurrentPage * $this->PageSize) . ", $this->PageSize";
 				}
-
 			} elseif ($this->queryType == "DELETE" or $this->queryType == "UPDATE") {
-				// DELETE/UPDATE don't support paging:
-
+				// DELETE/UPDATE don't support paging but we might stil want to limit the number of rows affected:
 				return "LIMIT $this->PageSize";
 			}
 		}
