@@ -48,17 +48,17 @@
 		var $Handle;
 
 		# Internal flag:
-		var $_isPersistent         = true;
+		protected $_isPersistent				 = true;
 
 		# Performance monitoring:
-		var $_displayQueries       = false;
-		var $_profileQueries       = false;
-		var $_extendedProfiling    = false;
-		var $_queryCount           = 0;
-		var $_cummulativeQueryTime = 0;
+		protected $_displayQueries			 = false;
+		protected $_profileQueries			 = false;
+		protected $_extendedProfiling		 = false;
+		protected $_queryCount					 = 0;
+		protected $_cummulativeQueryTime = 0;
 
 		var $Log;
-		
+
 		function __construct() {
 			/**
 			 * The constructor can either be called with an existing database handle
@@ -98,53 +98,78 @@
 					trigger_error(__CLASS__ . "::" . __FUNCTION__ . "() called with " . func_num_args() . " arguments - it should be called with either 1 (a mysql connection handle) or 4 (the server, db_name, user, and password to connect with)", E_USER_ERROR);
 			}
 		}
-		
+
 		function __destruct() {
 			if (!$this->_profileQueries or empty($this->_queryLog)) return;
 
-			// TODO: finish ImpTable conversion
 			include_once("ImpUtils/ImpTable.php");
-			
+
 			uasort($this->_queryLog, create_function('$a,$b', 'return strcmp($b["Count"], $a["Count"]);'));
 
-			$QueryTable = new ImpTable($this->_queryLog);
-			$QueryTable->Attributes['id'] = 'DB_MySQL_Query_Summary';
-			$QueryTable->Caption = __class__ . " Queries";
-			$QueryTable->ColumnHeaders = array(
-		    "Query" => array("text" => "SQL Statement", "sortable" => true),
-		    "Count" => array("text" => "Count", "sortable" => true, "formatter" => "numberFormatter"),
-		    "Time"  => array("text" => "Time", "sortable" => true, "formatter" => "numberFormatter"),
-		    "Cost"  => array("text" => "Cost", "sortable" => true, "formatter" => "numberFormatter")			
+			$d = array();
+
+			foreach ($this->_queryLog as $k => $v) {
+				$d[] = array("Query" => $k, 'Count' => $v['Count'], 'Time' => round($v['Time'] * 1000000), 'Cost' => round($v['Time'] * 1000000 / $v['Count']));
+			}
+
+			$QueryTable = new ImpTable($d);
+
+			$QueryTable->DefaultSortKey   = 'Time';
+			$QueryTable->DefaultSortOrder = 'Descending';
+			$QueryTable->AutoSort('Cost', 'Descending');
+
+			$QueryTable->Attributes['id'] = __class__ . '_Query_Summary';
+			$QueryTable->Caption          = __class__ . " Queries";
+
+			$QueryTable->ColumnHeaders    = array(
+				'Query' => array('text' => 'SQL Statement', 	'type'=> 'string', 'sortable' => true),
+				'Count' => array('text' => 'Count', 					'type'=> 'number', 'sortable' => true, 'formatter' => 'DB_MySQL_numberFormatter'),
+				'Time'	=> array('text' => 'Time (&micro;s)', 'type'=> 'number', 'sortable' => true, 'formatter' => 'DB_MySQL_numberFormatter'),
+				'Cost'	=> array('text' => 'Cost', 						'type'=> 'number', 'sortable' => true, 'formatter' => 'DB_MySQL_numberFormatter')
 			);
-			?>			
+			?>
 					<style>
 						#DB_MySQL_Query_Summary {
-							font-family: sans-serif ! important;
+							text-align: left;
+							padding: 2pt;
+							background-color: white;
+							color: black;
 						}
-						
-						#DB_MySQL_Query_Summary td {
-							padding:2pt;
-							text-align:left;
-							font-size: 8pt;
+
+						#DB_MySQL_Query_Summary caption {
+							font-weight: bold;
+							text-align: center;
 						}
 
 						#DB_MySQL_Query_Summary thead {
 							background-color: lightgrey;
-							color:black;
-							text-align:center;
 						}
-						#DB_MySQL_Query_Summary thead a {
-							color: black ! important;
+
+						#DB_MySQL_Query_Summary a {
+							color: inherit ! important;
+							font-weight: inherit ! important;
+						}
+
+						#DB_MySQL_Query_Summary th {
+							padding: 2pt;
+							padding-right: 1em;
+							font-weight: bold;
+							white-space: nowrap;
+						}
+
+						#DB_MySQL_Query_Summary td {
+							font-family: monospace;
+							font-size: 9px;
 						}
 					</style>
 					<script>
-						function numberFormatter(elCell,oRecord,oColumn,oData) {
+						function DB_MySQL_numberFormatter(elCell, oRecord, oColumn, oData) {
 							elCell.style.padding = "2pt";
 							elCell.style.textAlign = "right";
 							elCell.style.fontFamily = "monospace ! important";
 							elCell.style.font = "9px ProFont";
 							elCell.innerHTML = oData;
-						}	
+						}
 					</script>
 			<?
 				$QueryTable->generate();
@@ -163,11 +188,11 @@
 				$this->_displayQueries = $b;
 			}
 		}
-		
+
 		function setLog(&$Log) {
 			$this->Log =& $Log;
 		}
-		
+
 		function log($Message, $Priority = false) {
 			if (isset($this->Log)) {
 				$this->Log->Log($Message, $Priority);
@@ -257,9 +282,9 @@
 			if (!strcmp($Server, $this->Server) or empty($this->Handle)) {
 				// We have to open a new connection:
 				$this->disconnect();
-				$this->Server   = $Server;
-				$this->Name     = $Name;
-				$this->User     = $User;
+				$this->Server		= $Server;
+				$this->Name			= $Name;
+				$this->User			= $User;
 				$this->Password = $Pass;
 				$this->connect();
 				return;
@@ -269,8 +294,8 @@
 				$this->_startTimer();
 				mysql_change_user($User, $Pass, $Name, $this->Handle) or trigger_error(__CLASS__ . "::" . __FUNCTION__ . "() mysql_change_user() failed: " . mysql_error(), E_USER_ERROR);
 				$this->_stopTimer(__CLASS__ . "->" . __FUNCTION__ . "() - mysql_change_user()");
-				$this->Name     = $Name;
-				$this->User     = $User;
+				$this->Name			= $Name;
+				$this->User			= $User;
 				$this->Password = $Pass;
 				return;
 			}
@@ -517,7 +542,7 @@
 			 */
 
 			assert(is_string($sql));
-			
+
 			if (empty($this->Log)) {
 				print "\n<pre>" . htmlspecialchars($sql) . "</pre>\n";
 			} else {
