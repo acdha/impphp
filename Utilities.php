@@ -4,7 +4,7 @@
 	 *	into a single project or object model
 	 */
 	require_once("URLValidator.php");
-	require_once("ImpHTML.php");		
+	require_once("ImpHTML.php");
 
 	/**
 	 *A replacement for die() which uses a friendlier error and doesn't disclose information
@@ -34,21 +34,25 @@
 
 		// Trigger a fatal error so we can take advantage of the normal logging:
 		trigger_error($message, E_USER_ERROR);
+		exit;
 	}
 
 	/**
 	 * A replacement error handler with improved debugging features
 	 */
 	function ImpErrorHandler($error, $message, $file, $line) {
+		// CHANGED: Backtrace links generate TextMate URLs when REMOTE_ADDR is localhost
+		// CHANGED: Backtraces use var_export_string() to display function parameters, capped at 20 characters for display (the title has the full string)
+		// CHANGED: phpinfo() is now limited to INFO_ENVIRONMENT|INFO_VARIABLES to reduce the size of error pages
 		if (error_reporting() & $error == 0) {
 			return; // Ignore the error
 		}
-		
-		// Create a utility function which will generate links to open the current file in TextMate assuming the request came from 127.0.0.1:
+
+		// A simple utility function which will generate links to open the current file in TextMate assuming the request came from 127.0.0.1:
 		if ($_SERVER["REMOTE_ADDR"] == "127.0.0.1") {
-			$generate_source_link = create_function('$file, $line', 'return "<code><a href=\"txmt://open?url=file://$file&line=$line\">$file:$line</a></code>";');
+			$generate_source_link = create_function('$file, $line', 'return "<code><a href=\"txmt://open?url=file://$file&line=$line\">" . basename($file) . ":$line</a></code>";');
 		} else {
-			$generate_source_link = create_function('$file, $line', 'return "<code>$file:$line</code>";');
+			$generate_source_link = create_function('$file, $line', 'return "<code>" . basename($file) . ":$line</code>";');
 		}
 
 		// If IMP_DEBUG is defined, use it's value instead so that any
@@ -56,18 +60,18 @@
 		$fatal = defined("IMP_DEBUG") ? IMP_DEBUG : false;
 		switch ($error) {
 			case E_USER_ERROR:
-				$fatal     = true;
+				$fatal		 = true;
 				$ErrorType = "USER ERROR";
+				break;
+			case E_ERROR:
+				$fatal		 = true;
+				$ErrorType = "ERROR";
 				break;
 			case E_USER_NOTICE:
 				$ErrorType = "USER NOTICE";
 				break;
 			case E_USER_WARNING:
 				$ErrorType = "USER WARNING";
-				break;
-			case E_ERROR:
-				$fatal     = true;
-				$ErrorType = "ERROR";
 				break;
 			case E_NOTICE:
 				$ErrorType = "NOTICE";
@@ -81,7 +85,9 @@
 		}
 
 		if (defined("IMP_DEBUG") and IMP_DEBUG) {
-			print "<p><b>$ErrorType</b> at " . $generate_source_link($file, $line) . ":</p><code>$message</code>";
+			print '<div class="Error">';
+
+			print "<p><b>$ErrorType</b> at " . $generate_source_link($file, $line) . ":</p> <code>$message</code>";
 			if (mysql_errno()) {
 				print "<p>Last MySQL error #" . mysql_errno() . ": <code>" . mysql_error() . "</code></p>";
 			}
@@ -110,14 +116,15 @@
 						$bt_args = array();
 					}
 
+					$arg_string = html_encode(implode(', ', array_map('var_export_string', $bt_args)));
 
-					print "\t<li><code>$bt_class$bt_type$bt_function(" . implode(', ', array_map('var_export_string', $bt_args)) . ")</code> at " . $generate_source_link($bt_file, $bt_line) . "</li>\n";
+					print "\t<li><code>$bt_class$bt_type$bt_function(<span title=\"$arg_string\">" . (strlen($arg_string) > 20 ? '...' : $arg_string) . "</span>)</code> at " . $generate_source_link($bt_file, $bt_line) . "</li>\n";
 				}
 				print '</ol>';
 			}
 
-			print '<h1>PHP Information</h1>';
-			phpinfo();
+			phpinfo(INFO_ENVIRONMENT|INFO_VARIABLES);
+			print '</div>';
 		}
 
 		error_log("$ErrorType at '$file' on line $line: $message");
@@ -125,14 +132,20 @@
 		exit(1);
 	}
 
- 	function var_export_string($mixed) {
- 		// Work around a bug in var_export which causes it to recurse and die when it finds recursive data structures:
- 		if (is_object($mixed)) {
- 			return get_class($mixed) . " Object";
- 		} else {
- 			return var_export($mixed, true);
- 		}
- 	}
+	function var_export_string($mixed) {
+		// Work around a bug in var_export which causes it to recurse and die when it finds recursive data structures:
+		if (is_object($mixed)) {
+			return get_class($mixed) . " Object";
+		} else {
+			return var_export($mixed, true);
+		}
+	}
+
+	function pre_print_r($a) {
+		print "\n<pre>\n";
+		print_r($a);
+		print "\n</pre>\n";
+	}
 
 	function redirect($URI = false, $Permanent = true) {
 		// Check to see if we've got a real URL or just a relative URL
@@ -140,7 +153,7 @@
 		// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.30
 
 		$HTTP_HOST = $_SERVER['HTTP_HOST'];
-		$PROTOCOL  = empty($_SERVER['HTTPS']) ? "http" : "https";
+		$PROTOCOL	 = empty($_SERVER['HTTPS']) ? "http" : "https";
 
 		if (empty($URI)) {
 			if (!empty($_SERVER['HTTP_REFERER'])) {
@@ -294,38 +307,38 @@
 		return implode($ElementSeparator, $ret);
 	}
 
-  if (!function_exists('json_encode')) {
-  	function json_encode($Data) {
-  		switch (gettype($Data)) {
-  			case 'NULL':
-  				return 'null';
+	if (!function_exists('json_encode')) {
+		function json_encode($Data) {
+			switch (gettype($Data)) {
+				case 'NULL':
+					return 'null';
 
-  			case 'boolean':
-  				return $Data ? 'true' : 'false';
+				case 'boolean':
+					return $Data ? 'true' : 'false';
 
-  			case 'integer':
-  				return (int) $Data;
+				case 'integer':
+					return (int) $Data;
 
-  			case 'double':
-  			case 'float':
-  				return (float) $Data;
+				case 'double':
+				case 'float':
+					return (float) $Data;
 
-  			case 'string':
-  				return '"' . $Data . '"';
+				case 'string':
+					return '"' . $Data . '"';
 
-  			case 'array':
-          // Associative and sparse arrays have to be handled with objects as the JS array type doesn't support this:
-  				if (!empty($Data) && (array_keys($Data) !== range(0, sizeof($Data) - 1))) {
-  					return '{' . join(',', array_map(create_function('$n,$v', 'return "\"$n\":" . json_encode($v);'), array_keys($Data), array_values($Data))) . '}';
-  				} else {
-  					return '[' . join(',', array_map('json_encode', $Data)) . ']';
-  				}
+				case 'array':
+					// Associative and sparse arrays have to be handled with objects as the JS array type doesn't support this:
+					if (!empty($Data) && (array_keys($Data) !== range(0, sizeof($Data) - 1))) {
+						return '{' . join(',', array_map(create_function('$n,$v', 'return "\"$n\":" . json_encode($v);'), array_keys($Data), array_values($Data))) . '}';
+					} else {
+						return '[' . join(',', array_map('json_encode', $Data)) . ']';
+					}
 
-  			default:
-  				die(__FUNCTION__ . " can't encode " . gettype($Data) . " data");
-  		}
-  	}
-  }
+				default:
+					die(__FUNCTION__ . " can't encode " . gettype($Data) . " data");
+			}
+		}
+	}
 
 	function html_encode($var) {
 		// See http://www.nicknettleton.com/zine/php/php-utf-8-cheatsheet
@@ -337,9 +350,10 @@
 	}
 
 	function get_class_var($class, $var) {
-		// Returns the named property from the *default* class properties (consult
-		// get_class_vars() documentation)
-		return array_value(get_class_vars($class), $var);
+		// Returns the named property from the *default* class properties
+		// CHANGED: 2007-06-07 - Uses ReflectionClass rather than get_class_vars() to avoid a PHP bug which caused protected properties of a subclass would not be included when get_class_vars() is called from code in the parent class (DBObject's get() method in this case)
+		$reflection = new ReflectionClass($class);
+		return array_value($reflection->getDefaultProperties(), $var);
 	}
 
 	function array_value($arr, $k) {
@@ -347,6 +361,15 @@
 		// of this is to avoid unnecessary temporary variables when you want a single
 		// value from a function which returns an array, as in get_class_var()
 		return $arr[$k];
+	}
+
+	function array_first($arr) {
+		// Returns the first element of an array - this is can be used in cases where reset() cannot be called directly without using a temporary variable (e.g. reset(array_keys($foo)))
+		return reset($arr);
+	}
+	function array_last($arr) {
+		// Returns the last element of an array - this is can be used in cases where end() cannot be called directly without using a temporary variable (e.g. end(array_keys($foo)))
+		return end($arr);
 	}
 
 ?>
