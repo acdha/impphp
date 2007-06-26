@@ -41,9 +41,6 @@
 	 * A replacement error handler with improved debugging features
 	 */
 	function ImpErrorHandler($error, $message, $file, $line) {
-		// CHANGED: Backtrace links generate TextMate URLs when REMOTE_ADDR is localhost
-		// CHANGED: Backtraces use var_export_string() to display function parameters, capped at 20 characters for display (the title has the full string)
-		// CHANGED: phpinfo() is now limited to INFO_ENVIRONMENT|INFO_VARIABLES to reduce the size of error pages
 		if (error_reporting() & $error == 0) {
 			return; // Ignore the error
 		}
@@ -351,7 +348,6 @@
 
 	function get_class_var($class, $var) {
 		// Returns the named property from the *default* class properties
-		// CHANGED: 2007-06-07 - Uses ReflectionClass rather than get_class_vars() to avoid a PHP bug which caused protected properties of a subclass would not be included when get_class_vars() is called from code in the parent class (DBObject's get() method in this case)
 		$reflection = new ReflectionClass($class);
 		return array_value($reflection->getDefaultProperties(), $var);
 	}

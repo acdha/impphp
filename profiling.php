@@ -1,6 +1,6 @@
 <?php
 	/*
-	 * Simple profiling functions 
+	 * Simple profiling functions
 	 *
 	 * Author: chris@improbable.org
 	 *
@@ -30,7 +30,7 @@
 		if (empty($i)) {
 			$i = microtime(true);
 		}
-		
+
 		if (empty($Position)) {
 			extract(debug_backtrace(), EXTR_PREFIX_ALL, 'dbt');
 			$Position = "<code>$dbt_class$dbt_type$dbt_function(<i>" . implode(', ', array_map('var_export_string', isset($dbt_args) ? $dbt_args : array())) . "</i>)</code> at <code>" . $generate_source_link($dbt_file, $dbt_line) . '</code>';

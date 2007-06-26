@@ -2,10 +2,10 @@
 
 abstract class ImpSingleton {
   private function __construct() {}
-  private function __clone() { 
+  private function __clone() {
 		trigger_error('It is impossible to clone a singleton', E_USER_ERROR);
 	}
- 
+
 	private static $Instances;
 
   static public function &getInstance($ClassName = null) {
