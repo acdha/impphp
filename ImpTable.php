@@ -34,7 +34,9 @@
 		function AutoSort($Key = false, $Order = false) {
 			assert(is_array($this->Data));
 
-			// CHANGED: Simplifed the AutoSort() logic
+			if (!empty($this->_autoSorted)) return;
+			$this->_autoSorted = true;
+
 			if (empty($Key) and !empty($_REQUEST['SortKey'])) {
 				$this->_SortKey = $_REQUEST['SortKey'];
 			}
@@ -50,10 +52,10 @@
 			$this->_SortOrder = $this->_SortOrder == "Descending" ? "Descending" : "Ascending";
 
 			if (empty($this->_SortKey)) {
-				$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : array_first(array_keys($this->Data));
+				$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : array_keys(array_first($this->Data));
 			}
 
-			assert(isset($this->Data[0][$this->_SortKey]));
+			assert(array_key_exists($this->_SortKey, array_first($this->Data)));
 
 			reset($this->Data);
 			if (!empty($this->_SortKey) and array_key_exists($this->_SortKey, current(($this->Data)))) {
