@@ -270,7 +270,7 @@
 		function changeConnection($Server, $Name, $User, $Pass) {
 			/**
 			 * Changes the connection settings but attempts to change as few things as possible
-			 * to avoid unncessary connection churn
+			 * to avoid unnecessary connection churn
 			 *
 			 */
 			assert(func_num_args() == 4);
@@ -306,6 +306,14 @@
 				$this->_stopTimer(__CLASS__ . "->" . __FUNCTION__ . "() - mysql_select_db()");
 				$this->Name = $Name;
 			}
+			$this->setCharacterSet();
+		}
+
+		function setCharacterSet($charset = false) {
+			if (empty($charset)) {
+				$charset = $this->queryValue('SELECT @@character_set_database');
+			}
+			$this->execute("SET NAMES '" . $charset . "'");
 		}
 
 		function connect() {
@@ -325,6 +333,8 @@
 			$this->Handle = $connect_func($this->Server, $this->User, $this->Password) or trigger_error(__CLASS__ . "::" . __FUNCTION__ . "() $connect_func() failed: " . mysql_error(), E_USER_ERROR);
 
 			mysql_selectdb($this->Name, $this->Handle) or trigger_error(__CLASS__ . "::" . __FUNCTION__ . "() mysql_selectdb() failed: " . mysql_error($this->Handle), E_USER_ERROR);
+
+			$this->setCharacterSet();
 
 			$this->_stopTimer(__CLASS__ . "->" . __FUNCTION__ . "() using $connect_func({$this->Server}, ...)");
 		}
