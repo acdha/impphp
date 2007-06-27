@@ -201,6 +201,12 @@
 		return array_filter($input, create_function('$i', 'return !empty($i);'));
 	}
 
+	function cmp($a, $b) {
+		// For use with usort & friends when we actually need a numeric comparison:
+		if ($a == $b) return 0;
+		return $a > $b ? 1 : -1;
+	}
+
 	function unwrap($text) {
 		// Takes a word-wrapped string and returns a single-line version:
 		return preg_replace('/\\s+/s', ' ', $text);
