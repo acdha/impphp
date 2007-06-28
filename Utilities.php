@@ -41,8 +41,13 @@
 	 * A replacement error handler with improved debugging features
 	 */
 	function ImpErrorHandler($error, $message, $file, $line) {
-		if (error_reporting() & $error == 0) {
+		if (!(error_reporting() & $error)) {
 			return; // Ignore the error
+		}
+
+		if ((substr($file, 0, 5) == '/usr/') and $error == E_STRICT) {
+			// TODO: come up with a more precise way to avoid reporting E_STRICT errors for PEAR classes
+			return;
 		}
 
 		// A simple utility function which will generate links to open the current file in TextMate assuming the request came from 127.0.0.1:
@@ -52,81 +57,65 @@
 			$generate_source_link = create_function('$file, $line', 'return "<code>" . basename($file) . ":$line</code>";');
 		}
 
-		// If IMP_DEBUG is defined, use it's value instead so that any
-		// error will halt in debugging mode
-		$fatal = defined("IMP_DEBUG") ? IMP_DEBUG : false;
-		switch ($error) {
-			case E_USER_ERROR:
-				$fatal		 = true;
-				$ErrorType = "USER ERROR";
-				break;
-			case E_ERROR:
-				$fatal		 = true;
-				$ErrorType = "ERROR";
-				break;
-			case E_USER_NOTICE:
-				$ErrorType = "USER NOTICE";
-				break;
-			case E_USER_WARNING:
-				$ErrorType = "USER WARNING";
-				break;
-			case E_NOTICE:
-				$ErrorType = "NOTICE";
-				break;
-			case E_WARNING:
-				$ErrorType = "WARNING";
-				break;
-			default:
-				$ErrorType = "UNKNOWN";
-				break;
-		}
+		$ErrorTypes = array (
+			E_ERROR							=> 'Error',
+			E_WARNING						=> 'Warning',
+			E_PARSE							=> 'Parsing Error',
+			E_NOTICE						=> 'Notice',
+			E_CORE_ERROR				=> 'Core Error',
+			E_CORE_WARNING			=> 'Core Warning',
+			E_COMPILE_ERROR			=> 'Compile Error',
+			E_COMPILE_WARNING		=> 'Compile Warning',
+			E_USER_ERROR				=> 'User Error',
+			E_USER_WARNING			=> 'User Warning',
+			E_USER_NOTICE				=> 'User Notice',
+			E_STRICT						=> 'Runtime Notice',
+			E_RECOVERABLE_ERROR => 'Catchable Fatal Error'
+		);
+
+		$ErrorType = isset($ErrorTypes[$error]) ? $ErrorTypes[$error] : 'Unknown';
+
+		// If IMP_DEBUG is defined we make everything fatal - otherwise we abort for anything else than an E_STRICT:
+		$fatal = IMP_DEBUG ? true : ($Error < E_STRICT);
 
 		if (defined("IMP_DEBUG") and IMP_DEBUG) {
 			print '<div class="Error">';
 
-			print "<p><b>$ErrorType</b> at " . $generate_source_link($file, $line) . ":</p> <code>$message</code>";
+			print "<p><b>$ErrorType</b> at " . $generate_source_link($file, $line) . ": <code>$message</code></p>";
 			if (mysql_errno()) {
 				print "<p>Last MySQL error #" . mysql_errno() . ": <code>" . mysql_error() . "</code></p>";
 			}
 
-			if (function_exists("debug_backtrace")) {
-				// Mmmm - PHP 4.3+ - see http://php.net/debug_backtrace
-				print '<h1>Backtrace</h1>';
-				print "<ol id=\"ImpErrorHandlerBacktrace\">\n";
+			print '<h1>Backtrace</h1>';
+			print "<ol class=\"ImpErrorHandlerBacktrace\">\n";
 
-				$btKeys = array("class", "type", "function", "file", "line");
+			$dbt = debug_backtrace();
+			assert($dbt[0]['function'] == __FUNCTION__);
+			array_shift($dbt); // Remove our own entry from the backtrace
 
-				$dbt = debug_backtrace();
-				assert($dbt[0]['function'] == __FUNCTION__);
-				array_shift($dbt); // Remove our own entry from the backtrace
-
-				foreach ($dbt as $t) {
-
-					foreach ($btKeys as $k) {
-						if (!isset($t[$k])) {
-							$t[$k] = false;
-						}
-					}
-
-					extract($t, EXTR_PREFIX_ALL, 'bt');
-					if (!isset($bt_args)) {
-						$bt_args = array();
-					}
-
-					$arg_string = html_encode(implode(', ', array_map('var_export_string', $bt_args)));
-
-					print "\t<li><code>$bt_class$bt_type$bt_function(<span title=\"$arg_string\">" . (strlen($arg_string) > 20 ? '...' : $arg_string) . "</span>)</code> at " . $generate_source_link($bt_file, $bt_line) . "</li>\n";
+			foreach ($dbt as $t) {
+				foreach (array("class", "type", "function", "file", "line") as $k) {
+					if (!isset($t[$k])) $t[$k] = false;
 				}
-				print '</ol>';
+
+				extract($t, EXTR_PREFIX_ALL, 'bt');
+				if (!isset($bt_args)) {
+					$bt_args = array();
+				}
+
+				$arg_string = html_encode(implode(', ', array_map('var_export_string', $bt_args)));
+
+				print "\t<li><code>$bt_class$bt_type$bt_function(<span title=\"$arg_string\">" . (strlen($arg_string) > 20 ? '...' : $arg_string) . "</span>)</code> at " . $generate_source_link($bt_file, $bt_line) . "</li>\n";
 			}
+			print '</ol>';
 
 			phpinfo(INFO_ENVIRONMENT|INFO_VARIABLES);
 			print '</div>';
 		}
 
-		error_log("$ErrorType at '$file' on line $line: $message");
+		error_log(__FUNCTION__ . ": $ErrorType in $file on line $line: " . quotemeta($message));
 
-		exit(1);
+		if ($fatal) exit(1);
 	}
 
 	function var_export_string($mixed) {
@@ -175,7 +164,7 @@
 
 	function reject($Message, $Target = false) {
 		// Similar to redirect() but with an added error message which gets logged; useful for rejecting attempts to access invalid/unavailable resources since it records some state
-		error_log($Message . '; $_SESSION=' . (isset($_SESSION) ? unwrap(var_export($_SESSION, true)) : 'undefined') . '; $_REQUEST=' . unwrap(var_export($_REQUEST, true)) . '; $_SERVER=' . unwrap(var_export(array_filter_keys($_SERVER, array("HTTP_REFERER", 'HTTP_USER_AGENT', 'HTTP_HOST', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING')), true)));
+		error_log("Rejected request for {$_SERVER['REQUEST_URI']}: $Message; \$_SESSION=" . (isset($_SESSION) ? unwrap(var_export($_SESSION, true)) : 'undefined') . '; $_REQUEST=' . unwrap(var_export($_REQUEST, true)) . '; $_SERVER=' . unwrap(var_export(array_filter_keys($_SERVER, array("HTTP_REFERER", 'HTTP_USER_AGENT', 'HTTP_HOST', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING')), true)));
 		redirect($Target);
 	}
 

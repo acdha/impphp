@@ -532,5 +532,10 @@
 				// Returns a generic reference which uniquely identifies this particular object in a reasonably persistent fashion:
 				return 'mysql://' . rawurlencode($DB->Server) . '/' . rawurlencode($DB->Name) . '/' . rawurlencode($this->DBTable) . "#{$this->ID}";
 			}
+
+			public static function defaultSortFunction($a, $b) {
+				// This is a function designed to be used with usort() and related functions. By default we sort only in numeric order by database ID:
+				return cmp($a->ID, $b->ID);
+			}
 	}
 ?>
