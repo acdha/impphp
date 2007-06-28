@@ -463,7 +463,7 @@
 				}
 			}
 
-			private function getChanges() {
+			public function getChanges() {
 				global $DB;
 
 				if (empty($this->ID)) {
