@@ -76,8 +76,7 @@
 					if (!empty($this->ColumnHeaders)) {
 						return $this->ColumnHeaders;
 					} else {
-						reset($this->Data);
-						return array_combine(array_keys(current($this->Data)), array_keys(current($this->Data)));
+						return array_combine(array_keys(array_first($this->Data)), array_keys(array_first($this->Data)));
 					}
 
 				default:
@@ -135,6 +134,8 @@
 				<?
 					//FIXME: Ugly hack around the fact that we're using json_encode for all of the ColumnSet options but need to pass function references to some of them and those need to be barewords rather than quoted strings
 					foreach ($Headers as $name => $display) {
+						if (!is_array($display)) continue;
+
 						if (!empty($display['sortOptions']['ascFunction'])) {
 							echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
 							echo $JSName, '_ColumnSet.flat[i].ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
