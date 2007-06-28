@@ -52,7 +52,7 @@
 			$this->_SortOrder = $this->_SortOrder == "Descending" ? "Descending" : "Ascending";
 
 			if (empty($this->_SortKey)) {
-				$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : array_keys(array_first($this->Data));
+				$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : array_first(array_keys(array_first($this->Data)));
 			}
 
 			assert(array_key_exists($this->_SortKey, array_first($this->Data)));
