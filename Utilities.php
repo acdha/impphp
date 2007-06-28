@@ -81,7 +81,7 @@
 		$ErrorType = isset($ErrorTypes[$error]) ? $ErrorTypes[$error] : 'Unknown';
 
 		// If IMP_DEBUG is defined we make everything fatal - otherwise we abort for anything else than an E_STRICT:
-		$fatal = IMP_DEBUG ? true : ($error < E_STRICT);
+		$fatal = (defined("IMP_DEBUG") and IMP_DEBUG) ? true : ($error < E_STRICT);
 
 		if (defined("IMP_DEBUG") and IMP_DEBUG) {
 			print '<div class="Error">';
