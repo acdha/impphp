@@ -18,9 +18,8 @@
 
 		// If we're in debug mode, don't bother dumping the boilerplate
 		if (!(defined("IMP_DEBUG") && IMP_DEBUG)) {
-
 			// Use a site-specific error message if one has been defined:
-			if (defined("IMPDIE_MESSAGE")) {
+			if (defined("IMP_FATAL_ERROR_MESSAGE")) {
 				print IMPDIE_MESSAGE;
 			} else {
 				print "<p>An error occurred while processing your request. The administrator has been notified.</p>";
@@ -39,10 +38,16 @@
 
 	/**
 	 * A replacement error handler with improved debugging features
+	 * - Backtraces including function parameters will be printed using TextMate URLs when running on localhost
+	 * - No output will be generated if IMP_DEBUG is not defined and true
+	 * - Most errors (all if IMP_DEBUG is true, < E_STRICT otherwise) are fatal to avoid continuing in abnormal situations
+	 * - Errors will always be recorded using error_log()
+	 * - MySQL's error will be printed if non-empty
+	 * - E_STRICT errors in system paths will be ignored to avoid PEAR/PHP5 compatibility issues
 	 */
-	function ImpErrorHandler($error, $message, $file, $line) {
+	function ImpErrorHandler($error, $message, $file, $line, $context) {
 		if (!(error_reporting() & $error)) {
-			return; // Ignore the error
+			return; // Obey the error_report() level and ignore the error
 		}
 
 		if ((substr($file, 0, 5) == '/usr/') and $error == E_STRICT) {
@@ -76,7 +81,7 @@
 		$ErrorType = isset($ErrorTypes[$error]) ? $ErrorTypes[$error] : 'Unknown';
 
 		// If IMP_DEBUG is defined we make everything fatal - otherwise we abort for anything else than an E_STRICT:
-		$fatal = IMP_DEBUG ? true : ($Error < E_STRICT);
+		$fatal = IMP_DEBUG ? true : ($error < E_STRICT);
 
 		if (defined("IMP_DEBUG") and IMP_DEBUG) {
 			print '<div class="Error">';
@@ -111,6 +116,10 @@
 
 			phpinfo(INFO_ENVIRONMENT|INFO_VARIABLES);
 			print '</div>';
+		} elseif (defined('IMP_FATAL_ERROR_MESSAGE')) {
+			print "\n\n\n";
+			print IMP_FATAL_ERROR_MESSAGE;
+			print "\n\n\n";
 		}
 
 		error_log(__FUNCTION__ . ": $ErrorType in $file on line $line: " . quotemeta($message));

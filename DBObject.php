@@ -535,7 +535,11 @@
 
 			public static function defaultSortFunction($a, $b) {
 				// This is a function designed to be used with usort() and related functions. By default we sort only in numeric order by database ID:
-				return cmp($a->ID, $b->ID);
+				if (property_exists($a, 'Name')) {
+					return strcmp($a->Name, $b->Name);
+				} else {
+					return cmp($a->ID, $b->ID);
+				}
 			}
 	}
 ?>

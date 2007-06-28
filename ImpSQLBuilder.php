@@ -169,13 +169,6 @@
 			return "\t\t" . implode(",\n\t\t", $c) . "\n";
 		}
 
-		function addTimestampColumn($col_name) {
-			// Utility to generate the SQL necessary to map from Unix timestamp (see time() docs)
-			// to native date format:
-
-			trigger_error(get_class() . "::addTimestampColumn() is deprecated - use addColum(var, type)", E_USER_ERROR);
-		}
-
 		function getProcessedValues() {
 			// Returns key=value pairs ready to be inserted in the database:
 			$a = array();
