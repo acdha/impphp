@@ -142,7 +142,7 @@
 		print "\n</pre>\n";
 	}
 
-	function redirect($URI = false, $Permanent = true) {
+	function redirect($URI = false, $Permanent = false) {
 		// Check to see if we've got a real URL or just a relative URL
 		// RFC 2616 requires absolute URLs so we need to convert relative references
 		// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.30
