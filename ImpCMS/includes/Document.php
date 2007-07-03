@@ -9,10 +9,10 @@
 			'DisplayVersion'        => array('type' => 'object', 'class' => 'DocumentVersion'),
 			'Created'               => 'datetime',
 			'Modified'              => 'timestamp',
-			'ChildSortKey'          => 'enum',
-			'ChildSortOrder'        => 'enum',
-			'ResourceSortKey'       => 'enum',
-			'ResourceSortOrder'     => 'enum'
+			'ChildSortKey'          => array('type' => 'enum', 'default' => 'Title'),
+			'ChildSortOrder'        => array('type' => 'enum', 'default' => 'Ascending'),
+			'ResourceSortKey'       => array('type' => 'enum', 'default' => 'Title'),
+			'ResourceSortOrder'     => array('type' => 'enum', 'default' => 'Ascending')
 		);
 
 		protected $DBTable       = 'Documents';
@@ -111,7 +111,6 @@
 
 			// Only load if we haven't done so
 			if (!isset($this->Children)) {
-				// CHANGED: We now demand-load the expensive part of Documents (Body) and perform one query instead of many
 				// TODO: Make sure we avoid calling getChildren() where possible
 				// TODO: Change this to use DBObject::find() once that interface is mature
 				// TODO: this needs to use the defined child sort key settings for this document
@@ -121,6 +120,17 @@
 			assert(is_array($this->Children));
 
 			return $this->Children;
+		}
+
+		function getChildByName($Name) {
+			global $DB;
+			$cid = $DB->queryValue('SELECT ID FROM Documents WHERE Parent = ' . $this->ID . ' AND Title = \'' . $DB->escape($Name) .'\'');
+			if (empty($cid)) {
+				return false;
+			}
+
+			$d = Document::get($cid);
+			return $d->isVisible() ? $d : false;
 		}
 
 		/**
