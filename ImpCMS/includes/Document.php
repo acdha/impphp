@@ -8,7 +8,7 @@
 			'Visible'               => 'boolean',
 			'DisplayVersion'        => array('type' => 'object', 'class' => 'DocumentVersion'),
 			'Created'               => 'datetime',
-			'Updated'               => 'timestamp',
+			'Modified'              => 'timestamp',
 			'ChildSortKey'          => 'enum',
 			'ChildSortOrder'        => 'enum',
 			'ResourceSortKey'       => 'enum',
