@@ -1,15 +1,21 @@
 <?php
 	class Document extends DBObject {
-		protected $Properties = array(
-			'Parent'         => array('type' => 'object', 'class' => 'Document'),
-			'Title'          => array('type' => 'string', 'formfield' => true, 'required' => true),
-			'TextID'         => array('type' => 'string', 'formfield' => true),
-			'Container'      => array('type' => 'string', 'formfield' => true),
-			'Visible'        => 'boolean',
-			'DisplayVersion' => array('type' => 'object', 'class' => 'DocumentVersion')
+		protected $Properties    = array(
+			'Parent'                => array('type' => 'object', 'class' => 'Document'),
+			'Title'                 => array('type' => 'string', 'formfield' => true, 'required' => true),
+			'TextID'                => array('type' => 'string', 'formfield' => true),
+			'Container'             => array('type' => 'string', 'formfield' => true),
+			'Visible'               => 'boolean',
+			'DisplayVersion'        => array('type' => 'object', 'class' => 'DocumentVersion'),
+			'Created'               => 'datetime',
+			'Updated'               => 'timestamp',
+			'ChildSortKey'          => 'enum',
+			'ChildSortOrder'        => 'enum',
+			'ResourceSortKey'       => 'enum',
+			'ResourceSortOrder'     => 'enum'
 		);
 
-		protected $DBTable			 = 'Documents';
+		protected $DBTable       = 'Documents';
 		protected $_trackChanges = true;
 
 		var $Children;
