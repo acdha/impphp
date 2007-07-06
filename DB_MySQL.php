@@ -108,8 +108,10 @@
 
 			$d = array();
 
+			$TotalQueries = 0;
 			foreach ($this->_queryLog as $k => $v) {
 				$d[] = array("Query" => $k, 'Count' => $v['Count'], 'Time' => round($v['Time'] * 1000000), 'Cost' => round($v['Time'] * 1000000 / $v['Count']));
+				$TotalQueries += $v['Count'];
 			}
 
 			$QueryTable = new ImpTable($d);
@@ -119,7 +121,7 @@
 			$QueryTable->AutoSort('Cost', 'Descending');
 
 			$QueryTable->Attributes['id'] = __class__ . '_Query_Summary';
-			$QueryTable->Caption          = __class__ . " Queries";
+			$QueryTable->Caption          = __class__ . ' ' . number_format($TotalQueries) . ' Queries';
 
 			$QueryTable->ColumnHeaders    = array(
 				'Query' => array('text' => 'SQL Statement', 	'type'=> 'string', 'sortable' => true),
