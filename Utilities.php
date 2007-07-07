@@ -83,20 +83,20 @@
 		// If IMP_DEBUG is defined we make everything fatal - otherwise we abort for anything else than an E_STRICT:
 		$fatal = (defined("IMP_DEBUG") and IMP_DEBUG) ? true : ($error < E_STRICT);
 
-		if (defined("IMP_DEBUG") and IMP_DEBUG) {
+		$dbt = debug_backtrace();
+		assert($dbt[0]['function'] == __FUNCTION__);
+		array_shift($dbt); // Remove our own entry from the backtrace
+
+		if (defined('IMP_DEBUG') and IMP_DEBUG) {
 			print '<div class="Error">';
 
 			print "<p><b>$ErrorType</b> at " . $generate_source_link($file, $line) . ": <code>$message</code></p>";
 			if (mysql_errno()) {
-				print "<p>Last MySQL error #" . mysql_errno() . ": <code>" . mysql_error() . "</code></p>";
+				print '<p>Last MySQL error #' . mysql_errno() . ': <code>' . mysql_error() . '</code></p>';
 			}
 
 			print '<h1>Backtrace</h1>';
-			print "<ol class=\"ImpErrorHandlerBacktrace\">\n";
-
-			$dbt = debug_backtrace();
-			assert($dbt[0]['function'] == __FUNCTION__);
-			array_shift($dbt); // Remove our own entry from the backtrace
+			print '<ol class="ImpErrorHandlerBacktrace">';
 
 			foreach ($dbt as $t) {
 				foreach (array("class", "type", "function", "file", "line") as $k) {
@@ -122,7 +122,7 @@
 			print "\n\n\n";
 		}
 
-		error_log(__FUNCTION__ . ": $ErrorType in $file on line $line: " . quotemeta($message));
+		error_log(__FUNCTION__ . ": $ErrorType in $file on line $line: " . quotemeta($message) . (!empty($dbt) ? ' (Began at ' . kimplode(array_filter_keys(array_last($dbt), array('file', 'line'))) . ')' : ''));
 
 		if ($fatal) exit(1);
 	}
@@ -174,6 +174,13 @@
 	function reject($Message, $Target = false) {
 		// Similar to redirect() but with an added error message which gets logged; useful for rejecting attempts to access invalid/unavailable resources since it records some state
 		error_log("Rejected request for {$_SERVER['REQUEST_URI']}: $Message; \$_SESSION=" . (isset($_SESSION) ? unwrap(var_export($_SESSION, true)) : 'undefined') . '; $_REQUEST=' . unwrap(var_export($_REQUEST, true)) . '; $_SERVER=' . unwrap(var_export(array_filter_keys($_SERVER, array("HTTP_REFERER", 'HTTP_USER_AGENT', 'HTTP_HOST', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING')), true)));
+		redirect($Target);
+	}
+
+	function require_method($Method, $Target = false) {
+		// A simple way to enforce usage of the intended HTTP method for a given page
+		if (strcasecmp($_SERVER['REQUEST_METHOD'], $Method) === 0) return;
+		error_log("Rejected non-$Method request for {$_SERVER['REQUEST_URI']}. \$_SERVER=" . unwrap(var_export(array_filter_keys($_SERVER, array("HTTP_REFERER", 'HTTP_USER_AGENT', 'HTTP_HOST', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING')), true)));
 		redirect($Target);
 	}
 
