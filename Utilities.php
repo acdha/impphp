@@ -108,6 +108,9 @@
 
 	function ImpExceptionHandler(Exception $e) {
 		if (!defined('IMP_DEBUG') or !IMP_DEBUG) {
+			if (defined('IMP_FATAL_ERROR_MESSAGE')) {
+				echo '<div>', IMP_FATAL_ERROR_MESSAGE, '</div>';
+			}
 			error_log('Unhandled exception: ' . $e);
 			exit(1);
 		}
@@ -126,6 +129,9 @@
 
 	function ImpAssertHandler($file, $line, $code) {
 		if (!defined('IMP_DEBUG') or !IMP_DEBUG) {
+			if (defined('IMP_FATAL_ERROR_MESSAGE')) {
+				echo '<div>', IMP_FATAL_ERROR_MESSAGE, '</div>';
+			}
 			error_log("Assert failed at $file:$line: $code");
 			exit(1);
 		}
