@@ -55,12 +55,6 @@
 			return;
 		}
 
-		// A simple utility function which will generate links to open the current file in TextMate assuming the request came from 127.0.0.1:
-		if ($_SERVER["REMOTE_ADDR"] == "127.0.0.1") {
-			$generate_source_link = create_function('$file, $line', 'return "<code><a href=\"txmt://open?url=file://$file&line=$line\">" . basename($file) . ":$line</a></code>";');
-		} else {
-			$generate_source_link = create_function('$file, $line', 'return "<code>" . basename($file) . ":$line</code>";');
-		}
 
 		$ErrorTypes = array (
 			E_ERROR							=> 'Error',
@@ -81,7 +75,7 @@
 		$ErrorType = isset($ErrorTypes[$error]) ? $ErrorTypes[$error] : 'Unknown';
 
 		// If IMP_DEBUG is defined we make everything fatal - otherwise we abort for anything else than an E_STRICT:
-		$fatal = (defined("IMP_DEBUG") and IMP_DEBUG) ? true : ($error < E_STRICT);
+		$fatal = (defined("IMP_DEBUG") and IMP_DEBUG) ? true : ($error != E_STRICT);
 
 		$dbt = debug_backtrace();
 		assert($dbt[0]['function'] == __FUNCTION__);
@@ -90,29 +84,14 @@
 		if (defined('IMP_DEBUG') and IMP_DEBUG) {
 			print '<div class="Error">';
 
-			print "<p><b>$ErrorType</b> at " . $generate_source_link($file, $line) . ": <code>$message</code></p>";
-			if (mysql_errno()) {
+			print "<p><b>$ErrorType</b> at ";
+			generate_debug_source_link($file, $line, $message);
+			print "</p>";
+			if (function_exists('mysql_errno') and mysql_errno() > 0) {
 				print '<p>Last MySQL error #' . mysql_errno() . ': <code>' . mysql_error() . '</code></p>';
 			}
 
-			print '<h1>Backtrace</h1>';
-			print '<ol class="ImpErrorHandlerBacktrace">';
-
-			foreach ($dbt as $t) {
-				foreach (array("class", "type", "function", "file", "line") as $k) {
-					if (!isset($t[$k])) $t[$k] = false;
-				}
-
-				extract($t, EXTR_PREFIX_ALL, 'bt');
-				if (!isset($bt_args)) {
-					$bt_args = array();
-				}
-
-				$arg_string = html_encode(implode(', ', array_map('var_export_string', $bt_args)));
-
-				print "\t<li><code>$bt_class$bt_type$bt_function(<span title=\"$arg_string\">" . (strlen($arg_string) > 20 ? '...' : $arg_string) . "</span>)</code> at " . $generate_source_link($bt_file, $bt_line) . "</li>\n";
-			}
-			print '</ol>';
+			generate_debug_backtrace($dbt);
 
 			phpinfo(INFO_ENVIRONMENT|INFO_VARIABLES);
 			print '</div>';
@@ -125,6 +104,72 @@
 		error_log(__FUNCTION__ . ": $ErrorType in $file on line $line: " . quotemeta($message) . (!empty($dbt) ? ' (Began at ' . kimplode(array_filter_keys(array_last($dbt), array('file', 'line'))) . ')' : ''));
 
 		if ($fatal) exit(1);
+	}
+
+	function ImpExceptionHandler(Exception $e) {
+		if (!defined('IMP_DEBUG') or !IMP_DEBUG) {
+			error_log('Unhandled exception: ' . $e);
+			exit(1);
+		}
+
+		echo '<div class="Error Exception">Uncaught Exception: <code>';
+		generate_debug_source_link($e->getFile(), $e->getLine(), $e->getCode());
+		echo '</code>';
+
+		echo '<p>', $e->getMessage(), '</p>';
+
+		generate_debug_backtrace($e->getTrace());
+
+		print '</div>';
+		exit(1);
+	}
+
+	function ImpAssertHandler($file, $line, $code) {
+		if (!defined('IMP_DEBUG') or !IMP_DEBUG) {
+			error_log("Assert failed at $file:$line: $code");
+			exit(1);
+		}
+
+		echo '<div class="Error Assert">Assert failed: <code>';
+		generate_debug_source_link($file, $line, $code);
+		echo '</code></div>';
+		exit(1);
+	}
+
+	function generate_debug_backtrace($bt) {
+		print '<h1>Backtrace</h1>';
+		print '<ol class="Backtrace">';
+
+		foreach ($bt as $t) {
+			foreach (array("class", "type", "function", "file", "line") as $k) {
+				if (!isset($t[$k])) $t[$k] = false;
+			}
+
+			extract($t, EXTR_PREFIX_ALL, 'bt');
+			if (!isset($bt_args)) {
+				$bt_args = array();
+			}
+
+			$arg_string = html_encode(implode(', ', array_map('var_export_string', $bt_args)));
+
+			print "\t<li><code>$bt_class$bt_type$bt_function(<span title=\"$arg_string\">" . (strlen($arg_string) > 20 ? '...' : $arg_string) . "</span>)</code> at ";
+			generate_debug_source_link($bt_file, $bt_line);
+			print "</li>\n";
+		}
+		print '</ol>';
+	}
+
+	function generate_debug_source_link($file, $line, $text = false) {
+		if ($_SERVER["REMOTE_ADDR"] == "127.0.0.1") {
+			echo '<a href="txmt://open?url=file://', rawurlencode($file) , '&line=', $line,'">';
+			echo '<span title="' . html_encode($file) . '">', basename($file), '</span>:', $line;
+			if (!empty($text)) {
+				echo ': ', $text;
+			}
+			echo '</a>';
+		} else {
+			echo "$file:$line: $text";
+		}
 	}
 
 	function var_export_string($mixed) {
@@ -262,9 +307,40 @@
 		 * In practice, IE5 frequently ignores the HTTP standard.
 		 */
 		header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");									// Date in the past
-		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");		// always modified
+		header("Last-Modified: " . gmdate('r'));													// always modified
 		header("Cache-Control: no-cache, must-revalidate");								// HTTP/1.1
 		header("Pragma: no-cache");																				// HTTP/1.0
+	}
+
+	function check_client_cache($current_etag, $current_mtime, $max_age = 3600) {
+		assert(!empty($current_etag));
+		assert($max_age > 0);
+
+		$use_cache = false;
+
+		$headers = array_change_key_case(getallheaders(), CASE_LOWER);
+
+		if (!empty($headers["if-none-match"]) and ($headers["if-none-match"] == $current_etag)) {
+			$use_cache = true;
+		}
+
+		if (!empty($headers['if-modified-since'])) {
+			$ims = strtotime($headers['if-modified-since']);
+			if ($ims > 0 and $ims >= $current_mtime) {
+				$use_cache = true;
+			}
+		}
+
+		if ($use_cache) {
+			header('HTTP/1.1 304 Not changed');
+			header('Last-Modified: ' . gmdate("r", $current_mtime));
+			exit;
+		} else {
+			header("ETag: $current_etag");
+			header('Last-Modified: ' . gmdate("r", $current_mtime));
+			header('Expires: ' . gmdate('r', time() + $max_age));
+			header("Cache-Control: max-age=$max_age");
+		}
 	}
 
 	function import_vars() {
