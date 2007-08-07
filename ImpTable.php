@@ -104,56 +104,56 @@
 
 			$JSName = ImpHTML::makeSafeJavaScriptName($this->Attributes['id']);
 ?>
-			<script src="http://yui.yahooapis.com/2.3.0/build/yuiloader/yuiloader-beta-min.js"></script> 
-			<script>
-				loader = new YAHOO.util.YUILoader(); 
-				loader.require("datatable");
-			</script>
-
 			<div <?=ImpHTML::attributeImplode($this->Attributes)?>></div>
 
 			<script type="text/javascript">
-				loader.insert(function() {
-					var <?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
-					<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
-					<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };
+				YAHOO_config = {
+					load: {
+							require: ['datatable'],
+							onLoadComplete: function(loader) {
+								var <?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
+								<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
+								<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };
 
-					var <?=$JSName?>_ColumnSet = new YAHOO.widget.ColumnSet([<?
-						foreach($Headers as $name => $display) {
-							if (is_array($display)) {
-								echo json_encode(array_merge(array('key' => $name, 'text' => $name, 'sortable' => true), $display)), ",\n";
-							}	else {
-								echo '{key:"', $name, '",text:"', $display, '", sortable:true},';
+								var <?=$JSName?>_ColumnSet = new YAHOO.widget.ColumnSet([<?
+									foreach($Headers as $name => $display) {
+										if (is_array($display)) {
+											echo json_encode(array_merge(array('key' => $name, 'text' => $name, 'sortable' => true), $display)), ",\n";
+										}	else {
+											echo '{key:"', $name, '",text:"', $display, '", sortable:true},';
+										}
+									}
+								?>]);
+
+								<?
+									//FIXME: Ugly hack around the fact that we're using json_encode for all of the ColumnSet options but need to pass function references to some of them and those need to be barewords rather than quoted strings
+									foreach ($Headers as $name => $display) {
+										if (!is_array($display)) continue;
+
+										if (!empty($display['sortOptions']['ascFunction'])) {
+											echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
+											echo $JSName, '_ColumnSet.flat[i].ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
+											echo $JSName, '_ColumnSet.flat[i].descFunction=', $display['sortOptions']['descFunction'], ";\n";
+											echo $JSName, '_ColumnSet.flat[i].sortOptions.ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
+											echo $JSName, '_ColumnSet.flat[i].sortOptions.descFunction=', $display['sortOptions']['descFunction'], ";\n";
+											echo "};\n";
+										}
+
+										if(!empty($display['formatter'])) {
+											echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
+											echo $JSName, '_ColumnSet.flat[i].formatter=', $display['formatter'], ";\n";
+											echo "};\n";
+										}
+									}
+
+								?>
+
+								var <?=$JSName?>_DataTable = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=$JSName?>_ColumnSet, <?=$JSName?>_DataSource, <?=json_encode($this->_getDataTableOptions())?>);
 							}
 						}
-					?>]);
-
-					<?
-						//FIXME: Ugly hack around the fact that we're using json_encode for all of the ColumnSet options but need to pass function references to some of them and those need to be barewords rather than quoted strings
-						foreach ($Headers as $name => $display) {
-							if (!is_array($display)) continue;
-
-							if (!empty($display['sortOptions']['ascFunction'])) {
-								echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
-								echo $JSName, '_ColumnSet.flat[i].ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
-								echo $JSName, '_ColumnSet.flat[i].descFunction=', $display['sortOptions']['descFunction'], ";\n";
-								echo $JSName, '_ColumnSet.flat[i].sortOptions.ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
-								echo $JSName, '_ColumnSet.flat[i].sortOptions.descFunction=', $display['sortOptions']['descFunction'], ";\n";
-								echo "};\n";
-							}
-
-							if(!empty($display['formatter'])) {
-								echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
-								echo $JSName, '_ColumnSet.flat[i].formatter=', $display['formatter'], ";\n";
-								echo "};\n";
-							}
-						}
-
-					?>
-
-					var <?=$JSName?>_DataTable = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=$JSName?>_ColumnSet, <?=$JSName?>_DataSource, <?=json_encode($this->_getDataTableOptions())?>);
-				});
+					}
 			</script>
+			<script src="http://yui.yahooapis.com/2.3.0/build/yuiloader/yuiloader-beta-min.js"></script> 
 <?
 		}
 
