@@ -30,7 +30,7 @@
 	 *
 	 *	// INSERT/UPDATE values:
 	 *	$Query->addValues(array(
-	 *	  "OwnerID"		=> 5,
+	 *	  "OwnerID"			=> 5,
 	 *	  "Subject"			=> "This is a test which actual touches the database. Isn't it nifty?",
 	 *	  "Visible"			=> 1
 	 *	  )
@@ -77,19 +77,33 @@
 	 */
 
 	class ImpSQLbuilder {
-		var $Columns    = array();	// Contains a list of column expressions to be retrieved
-		var $JoinTerms  = array();
-		var $WhereTerms = array();
-		var $GroupTerms = array();
-		var $OrderTerms = array();
-		var $DataValues = array();	// Contains key=value pairs for columns in UPDATE/INSERT
+		protected $Columns    = array();	// Contains a list of column expressions to be retrieved
+		protected $JoinTerms  = array();
+		protected $WhereTerms = array();
+		protected $GroupTerms = array();
+		protected $OrderTerms = array();
+		protected $DataValues = array();	// Contains key=value pairs for columns in UPDATE/INSERT
 
-		var $PageSize;
-		var $CurrentPage;
+		protected $PageSize;
+		protected $CurrentPage;
+
+		protected $DB;
 
 		function ImpSQLBuilder($table, $query_type = "SELECT") {
 			$this->Table = $table;
 			$this->queryType = strtoupper($query_type);
+		}
+
+		function setDB(ImpDB $DB) {
+			$this->DB = $DB;
+		}
+
+		function escape($data) {
+			if (!empty($this->DB)) {
+				return $this->DB->escape($data);
+			} else {
+				return mysql_real_escape_string($data); // Fall-back for legacy code
+			}
 		}
 
 		function setType($query_type = "SELECT") {
@@ -190,14 +204,14 @@
 						case 'set':
 						case 'enum':
 							if (is_array($Value)) {
-								$a[$Key] = "'" . mysql_real_escape_string(implode(',', $Value)) . "'";
+								$a[$Key] = "'" . $this->escape(implode(',', $Value)) . "'";
 							} else {
-								$a[$Key] = "'" . mysql_real_escape_string($Value) . "'";
+								$a[$Key] = "'" . $this->escape($Value) . "'";
 							}
 							break;
 
 						case "string":
-							$a[$Key] = "'" . mysql_real_escape_string($Value) . "'";
+							$a[$Key] = "'" . $this->escape($Value) . "'";
 							break;
 
 						default:
