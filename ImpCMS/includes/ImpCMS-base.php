@@ -12,27 +12,26 @@
 *
 */
 
-class ImpCMS extends ImpSingleton {
+class ImpCMS {
 		protected $AdminAccess = false;
  		protected $ShowInvisibleDocuments;
 		protected $ReadOnly;
 		protected $DB; // MySQL database object
-		
-		static public function &getInstance() {
-			return ImpSingleton::getInstance(__CLASS__);
-		}
 
-		protected function __construct() {
+		public function __construct($DB = null) { // FIXME: PDO prototype
 			$this->ShowInvisibleDocuments = $this->AdminAccess;
-			$this->ReadOnly = $this->AdminAccess;
+			$this->ReadOnly               = $this->AdminAccess;
 
-			assert(defined("IMPCMS_DB_SERVER"));
-			assert(defined("IMPCMS_DB_NAME"));
-			assert(defined("IMPCMS_DB_USER"));
-			assert(defined("IMPCMS_DB_USER_PASSWORD"));
-
-			$this->DB = new DB_MySQL(IMPCMS_DB_SERVER, IMPCMS_DB_NAME, IMPCMS_DB_USER, IMPCMS_DB_USER_PASSWORD);
-			$this->DB->connect();
+			if (empty($DB)) {
+				assert(defined("IMPCMS_DB_SERVER"));
+				assert(defined("IMPCMS_DB_NAME"));
+				assert(defined("IMPCMS_DB_USER"));
+				assert(defined("IMPCMS_DB_USER_PASSWORD"));
+				$this->DB = new PDO('mysql:host=' . IMPCMS_DB_SERVER . ';dbname=' . IMPCMS_DB_NAME, IMPCMS_DB_NAME, IMPCMS_DB_USER, IMPCMS_DB_USER_PASSWORD);
+			} else {
+				//FIXME: assert($DB instanceof PDO);
+				$this->DB =& $DB;
+			}
 
 			$this->EventDispatcher = new UserEventDispatcher($this);
 			$this->Permissions = new UserPermissionManager($this);
@@ -80,10 +79,12 @@ class ImpCMS extends ImpSingleton {
 			 *	Returns a Document object for the passed Document ID
 			 */
 
+			if (empty($ID)) return;
+
 			if (intval($ID) > 0) {
-				$dID = $DB->queryValue('SELECT ID FROM Documents WHERE ID=' . intval($ID));
+				$dID = $DB->queryValue('SELECT ID FROM Documents WHERE ID=?', intval($ID));
 			} else {
-				$dID = $DB->queryValue("SELECT ID FROM Documents WHERE TextID='" . $DB->escape($ID) . "'");
+				$dID = $DB->queryValue('SELECT ID FROM Documents WHERE TextID=?', $ID);
 			}
 
 			if (!empty($dID)) {
@@ -116,7 +117,7 @@ class ImpCMS extends ImpSingleton {
 						// value
 
 			$Documents = array();
-			foreach ($DB->queryValues("SELECT ID FROM Documents WHERE Container='" . $this->DB->escape($Container) . "' " . ($ShowAll ? '' : 'AND Visible=1')) as $did) {
+			foreach ($DB->queryValues("SELECT ID FROM Documents WHERE Container=? " . ($ShowAll ? '' : 'AND Visible=1'), $Container) as $did) {
 				$Documents[] = Document::get($did);
 			}
 

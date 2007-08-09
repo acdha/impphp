@@ -34,6 +34,4 @@
 
 	// Site-specific configuration and generally the only file the user needs to edit
 	require_once("impcms-config.php");
-	
-	$ImpCMS = &ImpCMS::getInstance('ImpCMS') or trigger_error("Couldn't create ImpCMS object!", E_USER_ERROR);
 ?>

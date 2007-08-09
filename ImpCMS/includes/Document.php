@@ -41,6 +41,11 @@
 			return $this->Visible;
 		}
 
+		function getETag() {
+			// Returns a value suitable for use as an HTTP Entity Tag
+			return sha1($this->Modified . $this->DisplayVersion->ID . $this->DisplayVersion->Modified);
+		}
+
 		function getBody() {
 			global $DB;
 
@@ -54,6 +59,7 @@
 				return '<p class="Notice">This document is currently unavailable</p>';
 			} else {
 				$Version = $this->getVersion();
+				if (empty($Version)) return false;
 				if (!empty($Version->Deleted)) {
 					trigger_error("Client {$_SERVER['REMOTE_ADDR']} requested document version #{$Version->ID} which has been deleted", E_USER_NOTICE);
 					return '<p class="Notice">This document is currently unavailable</p>';
@@ -124,7 +130,7 @@
 
 		function getChildByName($Name) {
 			global $DB;
-			$cid = $DB->queryValue('SELECT ID FROM Documents WHERE Parent = ' . $this->ID . ' AND Title = \'' . $DB->escape($Name) .'\'');
+			$cid = $DB->queryValue('SELECT ID FROM Documents WHERE Parent = ? AND Title = ?', $this->ID, $Name);
 			if (empty($cid)) {
 				return false;
 			}
@@ -137,7 +143,7 @@
 		 * Returns a Document object for the most recently modified child
 		 */
 		function getLastModifiedChild() {
-			return Document::get($DB->queryValue("SELECT ID FROM Documents WHERE Parent = {$this->ID} AND Visible = 'True' ORDER BY Modified DESC LIMIT 1"));
+			return Document::get($DB->queryValue("SELECT ID FROM Documents WHERE Parent = ? AND Visible = 'True' ORDER BY Modified DESC LIMIT 1", $this->ID));
 		}
 
 		/**
