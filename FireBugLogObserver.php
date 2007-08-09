@@ -2,9 +2,9 @@
 	class FireBugLogObserver extends Log_observer {
 		private $FBL;
 
-		function __construct($priority = PEAR_LOG_INFO) {
+		function __construct($priority = PEAR_LOG_INFO, $Name = __CLASS__) {
 			parent::__construct($priority);
-			$this->FBL = &Log::singleton('firebug', '', 'NIPS', array('buffering' => true), PEAR_LOG_DEBUG);
+			$this->FBL = &Log::singleton('firebug', '', $Name, array('buffering' => true), $priority);
 		}
 
 		function notify($hash) {
