@@ -3,7 +3,7 @@
 			A subclass for objects which closely track database tables
 
 			Since the concept of having multiple instances representing a
-      single table is unwise, this class uses a singleton approach to
+      single table is unwise, this class uses a factory approach to
       ensure that all future instantiations of a given (class, id)
       will return the first instance
 
@@ -42,7 +42,7 @@
 
 			TODO: add support for form validation information
 			TODO: remove legacy get/set*() methods
-			TODO: implement find() method
+			TODO: finish implementing find() method
 			TODO: cleanup property handling - we should have an iterator which converts $Properties values to arrays with the appropriate default values
 			TODO: Fix set handling to provide all possible values
 		 */
@@ -63,7 +63,6 @@
 				global $DB;
 
 				if ($id === false) {
-					// CHANGED: $id is now tested for being literally false as opposed to simply empty()
 					$c = new $class;
 					return $c;
 				}
@@ -99,7 +98,6 @@
 			protected function __construct($ID = false) {
 				global $DB, $AppLog;
 				assert(!empty($this->Properties));
-				// CHANGED: these check to make sure old values have been removed
 				assert(!isset($this->_classOverrides));
 				assert(!isset($this->RequiredFormFields));
 				assert(!isset($this->FormFields));
@@ -124,6 +122,7 @@
 							assert(count($Q) == 1);
 							$this->setID($ID);
 							$this->setProperties($Q[0]);
+							$this->_initialValues = $Q[0];
 						}
 					}
 				} else {
@@ -156,9 +155,10 @@
 									break;
 
 								default:
-								// CHANGED: default is now undefined rather than false so we can generate proper SQL NULLs
 							}
 						}
+
+						$this->_initialValues[$Name] = $this->$Name;
 					}
 				}
 			}
@@ -186,9 +186,6 @@
 
 			public function __set($p, $v) {
 				if (array_key_exists($p, $this->Properties)) {
-					if (!isset($this->_initialValues[$p])) {
-						$this->_initialValues[$p] = $v;
-					}
 					$this->$p = $v;
 				} elseif (isset($this->$p)) {
 					$this->$p = $v;
@@ -200,7 +197,6 @@
 			private function _lazyLoad($p) {
 				assert(isset($this->_lazyObjects[$p]));
 				$this->$p = call_user_func(array($this->_lazyObjects[$p]['Class'], "get"), $this->_lazyObjects[$p]['ID']);
-				$this->_initialValues[$p] = $this->$p;
 				unset($this->_lazyObjects[$p]);
 			}
 
@@ -212,9 +208,11 @@
 			}
 
 			protected static function _generateSelect($DBTable, $Properties, $Constraints) {
+				global $DB;
 				assert(!empty($Constraints));
 
 				$SQL = new ImpSQLBuilder($DBTable);
+				$SQL->setDB($DB);
 				$SQL->addColumn('ID', 'integer');
 
 				foreach ($Properties as $name => $def) {
@@ -240,6 +238,7 @@
 				global $DB;
 
 				$Q = new ImpSQLBuilder($this->DBTable);
+				$Q->setDB($DB);
 
 				foreach ($this->Properties as $P => $PropDef) {
 					if (is_array($PropDef)) {
@@ -265,8 +264,7 @@
 						case "object":
 							// Convert from a full object to its ID:
 							if (!empty($this->$P)) {
-								assert(is_object($this->$P));
-								$Q->addValue($P, $this->$P->ID);
+								$Q->addValue($P, is_object($this->$P) ? $this->$P->ID : (integer)$this->$P);
 							} else {
 								$Q->addValue($P, false);
 							}
@@ -436,6 +434,7 @@
 				assert(!empty($_SERVER['PHP_AUTH_USER']));
 
 				$Q = new ImpSQLBuilder("ChangeLog");
+				$Q->setDB($DB);
 				$Q->addValue("TargetTable", $this->DBTable);
 				$Q->addValue("RecordID", $this->ID);
 				$Q->addValue("Admin", $_SERVER['PHP_AUTH_USER']);
@@ -482,6 +481,9 @@
 				if (empty($Changes)) {
 					return;
 				}
+
+				// TODO: Add filtering here or consider switching to ImpTable with paged data so we can avoid having a huge changelog on the default view in an admin page
+				$Changes = array_reverse($Changes);
 
 				print '<table class="DBObjectChanges">';
 				print '<caption>';
@@ -530,7 +532,7 @@
 			public function getUniqueIdentifier() {
 				global $DB;
 				// Returns a generic reference which uniquely identifies this particular object in a reasonably persistent fashion:
-				return 'mysql://' . rawurlencode($DB->Server) . '/' . rawurlencode($DB->Name) . '/' . rawurlencode($this->DBTable) . "#{$this->ID}";
+				return $DB->getUniqueIdentifier($this->DBTable, $this->ID);
 			}
 
 			public static function defaultSortFunction($a, $b) {
