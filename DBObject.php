@@ -177,7 +177,7 @@
 					return $this->$p;
 				} elseif (isset($this->$p)) {
 					return $this->$p;
-				} elseif (isset($this->Properties[$p])) {
+				} elseif (isset($this->Properties[$p]) or array_key_exists($p, get_class_vars(get_class()))) {
 					return;
 				} else {
 					trigger_error("Attempted to get unknown property $p!", E_USER_ERROR);
@@ -185,9 +185,7 @@
 			}
 
 			public function __set($p, $v) {
-				if (array_key_exists($p, $this->Properties)) {
-					$this->$p = $v;
-				} elseif (isset($this->$p)) {
+				if (isset($this->$p) or array_key_exists($p, $this->Properties) or array_key_exists($p, get_class_vars(get_class()))) {
 					$this->$p = $v;
 				} else {
 					trigger_error("Attempted to set unknown property $p to $v!", E_USER_ERROR);
