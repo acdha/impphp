@@ -27,6 +27,8 @@
 		protected $_SortKey;
 		protected $_SortOrder;
 
+		protected static $JS_Initialized = false;
+
 		function ImpTable(array $Data = array()) {
 			$this->Data = $Data;
 		}
@@ -53,10 +55,10 @@
 			$this->_SortOrder = $this->_SortOrder == "Descending" ? "Descending" : "Ascending";
 
 			if (empty($this->_SortKey)) {
-				$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : array_first(array_keys(array_first($this->Data)));
+				$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : current(array_keys(reset($this->Data)));
 			}
 
-			assert(array_key_exists($this->_SortKey, array_first($this->Data)));
+			assert(array_key_exists($this->_SortKey, reset($this->Data)));
 
 			reset($this->Data);
 			if (!empty($this->_SortKey) and array_key_exists($this->_SortKey, current(($this->Data)))) {
@@ -77,7 +79,7 @@
 					if (!empty($this->ColumnHeaders)) {
 						return $this->ColumnHeaders;
 					} else {
-						return array_combine(array_keys(array_first($this->Data)), array_keys(array_first($this->Data)));
+						return array_combine(array_keys(reset($this->Data)), array_keys(reset($this->Data)));
 					}
 
 				default:
@@ -92,7 +94,14 @@
 			}
 
 			reset($this->Data);
-			assert(is_array(current($this->Data)));
+			if(!is_array(current($this->Data))) {
+				throw new Exception(__CLASS__ . '->Data is not a two-dimensional array!');
+			}
+
+			// This is currently necessary because YUI DataSources assume associative arrays and will display '[Object object]' for the value of a numeric array:
+			if (isset($this->Data[0][0])) {
+				$this->makeDataYUISafe();
+			}
 
 			$this->AutoSort();
 
@@ -102,62 +111,71 @@
 
 			$Headers = $this->ColumnHeaders;
 
-			$JSName = ImpHTML::makeSafeJavaScriptName($this->Attributes['id']);
+			$JSName = $this->Attributes['id'];
+			assert(preg_match('/^\w+$/', $JSName)); // The list of safe CSS and JavaScript names is extremely similar so we leave it up to the developer to pick a valid name
+
+			if (!ImpTable::$JS_Initialized) {
+				ImpTable::$JS_Initialized = true;
 ?>
-			<div <?=ImpHTML::attributeImplode($this->Attributes)?>></div>
+		<script src="http://yui.yahooapis.com/2.3.0/build/yahoo/yahoo-min.js" type="text/javascript"></script>
+		<script src="http://yui.yahooapis.com/2.3.0/build/yuiloader/yuiloader-beta-min.js" type="text/javascript"></script>
+		<script type="text/javascript" charset="utf-8">
+			ImpTable_Generators = new Array();
 
-			<script type="text/javascript">
-				YAHOO_config = {
-					load: {
-							require: ['datatable'],
-							onLoadComplete: function(loader) {
-								var <?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
-								<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
-								<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };
+			if (window.YAHOO && !(YAHOO.util && YAHOO.util.YUILoader)) {
+				alert("Existing YAHOO_config found; please add the YUILoader module!");
+			} else {
+				ImpTable_Loader = new YAHOO.util.YUILoader();
+				ImpTable_Loader.require('datatable', 'datasource');
+				ImpTable_Loader.insert(function() { while(f = ImpTable_Generators.pop()){ f(); } });
+			}
+		</script>
+<? 
+		} 
 
-								var <?=$JSName?>_ColumnSet = new YAHOO.widget.ColumnSet([<?
-									foreach($Headers as $name => $display) {
-										if (is_array($display)) {
-											echo json_encode(array_merge(array('key' => $name, 'text' => $name, 'sortable' => true), $display)), ",\n";
-										}	else {
-											echo '{key:"', $name, '",text:"', $display, '", sortable:true},';
-										}
-									}
-								?>]);
+		echo '<div ';
+		foreach ($this->Attributes as $k => $v) {
+			echo $k, '="', htmlspecialchars($v), '" ';
+		}
+		echo '></div>';
 
-								<?
-									//FIXME: Ugly hack around the fact that we're using json_encode for all of the ColumnSet options but need to pass function references to some of them and those need to be barewords rather than quoted strings
-									foreach ($Headers as $name => $display) {
-										if (!is_array($display)) continue;
+?>
 
-										if (!empty($display['sortOptions']['ascFunction'])) {
-											echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
-											echo $JSName, '_ColumnSet.flat[i].ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
-											echo $JSName, '_ColumnSet.flat[i].descFunction=', $display['sortOptions']['descFunction'], ";\n";
-											echo $JSName, '_ColumnSet.flat[i].sortOptions.ascFunction=', $display['sortOptions']['ascFunction'], ";\n";
-											echo $JSName, '_ColumnSet.flat[i].sortOptions.descFunction=', $display['sortOptions']['descFunction'], ";\n";
-											echo "};\n";
-										}
+		<script type="text/javascript">
+			function generate_<?=$JSName?>() {
+				<?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
+				<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
+				<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };
+				<?=$JSName?>_DataTable = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=json_encode($this->getYUIColumnDefinitions())?>, <?=$JSName?>_DataSource, <?=json_encode($this->getYUIDataTableOptions())?>);
+			}
 
-										if(!empty($display['formatter'])) {
-											echo 'for (var i in ', $JSName, '_ColumnSet.flat) { if (', $JSName, '_ColumnSet.flat[i].key != "', $name ,'") continue;';
-											echo $JSName, '_ColumnSet.flat[i].formatter=', $display['formatter'], ";\n";
-											echo "};\n";
-										}
-									}
-
-								?>
-
-								var <?=$JSName?>_DataTable = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=$JSName?>_ColumnSet, <?=$JSName?>_DataSource, <?=json_encode($this->_getDataTableOptions())?>);
-							}
-						}
-					}
-			</script>
-			<script src="http://yui.yahooapis.com/2.3.0/build/yuiloader/yuiloader-beta-min.js"></script> 
+			window.ImpTable_Generators.push(generate_<?=$JSName?>);
+		</script>
 <?
 		}
 
-		protected function _getDataTableOptions() {
+		protected function makeDataYUISafe() {
+			$formatKey = create_function('$s', 'return "Column " . ($s + 1);');
+			foreach ($this->Data as $k => $v) {
+				$this->Data[$k] = array_combine(array_map($formatKey, array_keys($v)), array_values($v));
+			}
+		}
+
+		protected function getYUIColumnDefinitions() {
+			$Columns = array();
+
+			foreach($this->ColumnHeaders as $name => $display) {
+				$def = array('key' => $name, 'sortable' => true);
+				if (is_array($display)) {
+					$def = array_merge($def, $display);
+				}
+				$Columns[] = $def;
+			}
+
+			return $Columns;
+		}
+
+		protected function getYUIDataTableOptions() {
 			$opts = array();
 
 			if (!empty($this->Caption)) {
@@ -170,6 +188,5 @@
 
 			return $opts;
 		}
-
 	};
 ?>
