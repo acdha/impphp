@@ -29,78 +29,98 @@
 						lazy			=> boolean indicating whether this should be loaded on demand (default: true)
 
 			NOTES:
-				Subclasses must implement the get() and find() static functions because these cannot be inherited from this class:
-					// These functions work around a problem with PHP5 inheritance which causes
-					// inherited methods to use the parent class's __CLASS__, $this, etc.
-					public static function &get($id = false) {
-						return self::_getInstance(__CLASS__, $id);
-					}
-					public static function find(array $constraints = array()) {
-						return self::_find(__CLASS__, $constraints);
-					}
+				Subclasses must implement the get() and find() static functions because these cannot be inherited from this class. See DBObject-template.php.
 
-
-			TODO: add support for form validation information
-			TODO: remove legacy get/set*() methods
-			TODO: finish implementing find() method
-			TODO: cleanup property handling - we should have an iterator which converts $Properties values to arrays with the appropriate default values
+			TODO: Add support for form validation information
+			TODO: Remove legacy get/set*() methods
+			TODO: Finish implementing find() method
+			TODO: Cleanup property handling - we should have an iterator which converts $Properties values to arrays with the appropriate default values
 			TODO: Fix set handling to provide all possible values
+			TODO: Add proper support for collections (e.g. defining Document->Children as a property of type collection, class = Document, key = Parent=$this->ID)
+			TODO: Add lazy loading for properties which are not objects
 		 */
+
+		if (!class_exists('ImpSQLBuilder')) {
+			require_once('ImpUtils/ImpSQLBuilder.php');
+		}
+
+		if (!function_exists('ImpErrorHandler')) {
+			require_once('ImpUtils/Utilities.php');
+		}
 
 		abstract class DBObject {
 			public $ID;
 			protected $DBTable;
 			protected $Properties;
-			protected $_trackChanges   = false;
-			protected $_ignoreChanges  = array();
-			protected $_initialValues  = array();
-			protected $_lazyObjects    = array();
-			private static $_instances = array();
+			protected $_trackChanges  = false;
+			protected $_ignoreChanges = array();
+			protected $_initialValues = array();
+			protected $_lazyObjects   = array();
+			public static $_instances = array();
+
+			static $DB;
 
 			abstract public static function &get($id = false);
 
 			protected static function &_getInstance($class, $id = false) {
-				global $DB;
-
 				if ($id === false) {
 					$c = new $class;
 					return $c;
 				}
 
+				if (!array_key_exists($class, self::$_instances)) {
+					self::$_instances[$class] = array();
+				}
+
 				if (is_array($id)) {
 					$objs = array();
 
+					foreach ($id as $k => $i) {
+						if (!empty(self::$_instances[$class][$i])) {
+							$objs[$i] = self::$_instances[$class][$i];
+							unset($id[$k]);
+						}
+					}
+
 					if (empty($id)) return $objs;
 
-					$ObjData = $DB->query(call_user_func(array($class, '_generateSelect'), get_class_var($class, 'DBTable'), get_class_var($class, 'Properties'), "ID IN (" . implode(', ', $id) . ")"));
+					$ObjData = DBObject::$DB->query(call_user_func(array($class, '_generateSelect'), get_class_var($class, 'DBTable'), get_class_var($class, 'Properties'), 'ID IN (' . implode(', ', $id) . ')'));
 
 					foreach ($ObjData as $d) {
 						$id = $d['ID'];
 
-						if (!isset(self::$_instances[$class][$id])) {
-							self::$_instances[$class][$id] =& new $class($d);
+						if (!array_key_exists($id, self::$_instances[$class])) {
+							self::$_instances[$class][$id] = new $class($d);
 						}
 
-						$objs[$id] =& self::$_instances[$class][$id];
+						$objs[$id] = self::$_instances[$class][$id];
 					}
 
 					return $objs;
-
 				} else {
-					if (!isset(self::$_instances[$class][$id])) {
-						self::$_instances[$class][$id] =& new $class($id);
-					}
-					return self::$_instances[$class][$id];
 
+					if (!array_key_exists($id, self::$_instances[$class])) {
+						self::$_instances[$class][$id] = new $class($id);
+					}
+
+					return self::$_instances[$class][$id];
 				}
 			}
 
+			public static function purgeInstance($class, $id) {
+				// Utility function used mostly for unit testing to force objects to be reloaded:
+				unset(self::$_instances[$class][$id]);
+			}
+
 			protected function __construct($ID = false) {
-				global $DB, $AppLog;
 				assert(!empty($this->Properties));
 				assert(!isset($this->_classOverrides));
 				assert(!isset($this->RequiredFormFields));
 				assert(!isset($this->FormFields));
+
+				if (!empty($GLOBALS['DB'])) {
+					DBObject::$DB = $GLOBALS['DB'];
+				}
 
 				if (!empty($ID)) {
 					if (is_array($ID)) {
@@ -109,15 +129,13 @@
 						$ID = intval($ID);
 
 						if (empty($ID)) {
-							error_log(get_class($this) . " constructor called with empty id $ID");
-							return;
+							throw new Exception("Constructor called with empty id $ID");
 						}
 
-						$Q = $DB->query($this->_generateSelect($this->DBTable, $this->Properties, "ID=$ID"));
+						$Q = DBObject::$DB->query($this->_generateSelect($this->DBTable, $this->Properties, "ID=$ID"));
 
 						if (count($Q) < 1) {
-							error_log(get_class($this) . " constructor called with non-existent id $ID");
-							return;
+							throw new Exception("Constructor called with non-existent id $ID");
 						} else {
 							assert(count($Q) == 1);
 							$this->setID($ID);
@@ -136,25 +154,34 @@
 							$Type = $def;
 						}
 
-						// TODO: File PHP bug report because $strings['index key'] is treated as a literal 'i' value!
-						if (is_array($def) and isset($def['default'])) {
+						if (is_array($def) and array_key_exists('default', $def)) {
 							$this->$Name = $def['default'];
 						} else {
 							switch ($Type) {
-								case "datetime":
-								case "timestamp":
+								case 'date':
+								case 'datetime':
+								case 'timestamp':
 									$this->$Name = 0;
 									break;
 
-								case "string":
+								case 'string':
+								case 'enum':
 									$this->$Name = '';
 									break;
 
-								case "set":
+								case 'set':
 									$this->$Name = array();
 									break;
 
+								case 'object':
+									break; // There is no meaningful default for this type
+
+								case 'boolean':
+									$this->$Name = false;
+									break;
+
 								default:
+									trigger_error('No default for property of type ' . $Type, E_USER_NOTICE);
 							}
 						}
 
@@ -184,148 +211,26 @@
 				}
 			}
 
-			public function __set($p, $v) {
-				if (isset($this->$p) or array_key_exists($p, $this->Properties) or array_key_exists($p, get_class_vars(get_class()))) {
-					$this->$p = $v;
-				} else {
-					trigger_error("Attempted to set unknown property $p to $v!", E_USER_ERROR);
-				}
-			}
-
-			private function _lazyLoad($p) {
-				assert(isset($this->_lazyObjects[$p]));
-				$this->$p = call_user_func(array($this->_lazyObjects[$p]['Class'], "get"), $this->_lazyObjects[$p]['ID']);
-				unset($this->_lazyObjects[$p]);
-			}
-
-			public static function _find($class, array $constraints = array()) {
-				global $DB;
-				assert(empty($constraints)); // TODO: Implement search constraints
-
-				return call_user_func(array($class, 'get'), $DB->queryValues("SELECT ID FROM " . get_class_var($class, 'DBTable')));
-			}
-
-			protected static function _generateSelect($DBTable, $Properties, $Constraints) {
-				global $DB;
-				assert(!empty($Constraints));
-
-				$SQL = new ImpSQLBuilder($DBTable);
-				$SQL->setDB($DB);
-				$SQL->addColumn('ID', 'integer');
-
-				foreach ($Properties as $name => $def) {
-					if (is_array($def)) {
-						assert(isset($def['type']));
-						$SQL->addColumn($name, $def['type']);
-					} else {
-						$SQL->addColumn($name, $def);
-					}
+			public function __set($name, $value) {
+				if (!(isset($this->$name) or array_key_exists($name, $this->Properties) or array_key_exists($name, get_class_vars(get_class())))) {
+					trigger_error("Attempted to set unknown property $name to $value!", E_USER_ERROR);
 				}
 
-				if (is_array($Constraints)) {
-					foreach ($Constraints as $c) {
-						$SQL->addConstraint($c);
-					}
-				} else {
-					$SQL->addConstraint($Constraints);
-				}
-				return $SQL->generateSelect();
-			}
-
-			public function save() {
-				global $DB;
-
-				$Q = new ImpSQLBuilder($this->DBTable);
-				$Q->setDB($DB);
-
-				foreach ($this->Properties as $P => $PropDef) {
-					if (is_array($PropDef)) {
-						$Type = $PropDef['type'];
-					} else {
-						$Type = $PropDef;
-					}
-
-					switch ($Type) {
-						case "timestamp": // Timestamps are automatically updated by the database
-							break;
-
-						case "datetime":
-						case "date":
-							if ($P == "Created" and $this->$P == 0) {
-								// We automatically set the Created column if it's unset:
-								$Q->addValue($P, time(), "time");
-							} else {
-								$Q->addValue($P, intval($this->$P), "time");
-							}
-							break;
-
-						case "object":
-							// Convert from a full object to its ID:
-							if (!empty($this->$P)) {
-								$Q->addValue($P, is_object($this->$P) ? $this->$P->ID : (integer)$this->$P);
-							} else {
-								$Q->addValue($P, false);
-							}
-							break;
-
-						case "boolean":
-							// Convert from boolean true/false to 1/0 for a BIT column
-							$Q->addValue($P, $this->$P ? 1 : 0);
-							break;
-
-						case "set":
-							// We convert from an array of key => true/false to a
-							// comma separated string of the keys whose value was true.
-							// This matches the way the MySQL SET column type
-							// behaves.
-							$Q->addValue($P, implode(",", array_keys(array_filter($this->$P, array(&$this, "_is_true")))), 'set');
-							break;
-
-						case 'enum':
-							$Q->addValue($P, $this->$P, 'enum');
-							break;
-
-						case 'integer':
-							$Q->addValue($P, intval($this->$P));
-							break;
-
-						default:
-							$Q->addValue($P, $this->$P);
-					}
-				}
-
-				if (!empty($this->ID)) {
-					if ($this->_trackChanges) {
-						$this->recordChanges();
-					}
-
-					$Q->addConstraint("ID=" . $this->ID);
-					$DB->execute($Q->generateUpdate());
-
-					assert($DB->getAffectedRowCount() <= 1);
-
-				} else {
-					$DB->execute($Q->generateInsert());
-					$this->ID = $DB->getLastInsertId();
-				}
-			}
-
-			public function setID($ID) {
-				assert(is_numeric($ID));
-				$this->ID = $ID;
-			}
-
-			public function setProperty($name, $value) {
 				switch ($name) {
-					case "ID":
-						$this->ID = intval($value);
+					case 'ID':
+						if (array_key_exists($name, $this->_initialValues)) {
+							unset(self::$_instances[get_class($this)][$this->_initialValues['ID']]);
+							assert(!isset(self::$_instances[get_class($this)][$value]));
+						}
+
+						$this->ID = (integer)$value;
 						break;
 
-					case "StartDate":
-					case "EndDate":
-					case "Created":
-					case "Modified":
-						settype($value, "integer"); // All dates are stored as time_t values
+					case 'StartDate':
+					case 'EndDate':
+					case 'Created':
+					case 'Modified':
+						settype($value, 'integer'); // All dates are stored as time_t values
 
 					default:
 						if (!isset($this->Properties[$name])) {
@@ -339,11 +244,7 @@
 						}
 
 						switch ($PropertyType) {
-							case "collection":
-								die("Attempted to redefine the $name collection!");
-								break;
-
-							case "object":
+							case 'object':
 								if (empty($value)) {
 									$this->$name = false;
 								} else {
@@ -369,48 +270,243 @@
 										$this->_lazyObjects[$name]['ID'] = intval($value);
 										$this->_lazyObjects[$name]['Class'] = $class;
 									} else {
-										class_exists($class) or die("Couldn't set $name: the $name class does not exist");
-										$this->$name = call_user_func(array($class, "get"), $value);
+										class_exists($class) or die("Couldn't set $name: the $class class does not exist");
+										$tmpObj = call_user_func(array($class, 'get'), $value);
+										if (!is_object($tmpObj) or empty($tmpObj->ID)) {
+											throw new Exception("Attempted to set $name to invalid ID $value");
+										}
+										$this->$name = $tmpObj;
 									}
 								}
-
 								break;
 
-							case "boolean":
-								$this->$name = is_bool($value) ? $value : ($value == 1);
+							case 'boolean':
+								$this->$name = (bool)$value;
 								break;
 
-							case "integer":
-								$this->$name = intval($value);
+							case 'set':
+									assert(array_key_exists('default', $this->Properties[$name]));
+									assert(is_array($this->Properties[$name]['default']));
+
+									if (is_array($value)) {
+										$this->$name = array_merge($this->Properties[$name]['default'], $value);
+									} else {
+										// In addition to hitting the setter only once, the use of a temporary variable avoids the variable variable syntax ambiguity of $name[$n]:
+
+										$tmp = $this->Properties[$name]['default'];
+
+										foreach (explode(',', $value) as $n) {
+											$tmp[$n] = true;
+										}
+
+										$this->$name = $tmp;
+									}
+								break;
+
+							case 'integer':
+							case 'date':
+							case 'datetime':
+							case 'timestamp':
+								$this->$name = (integer)$value;
 								break;
 
 							default:
 								$this->$name = $value;
 						}
 				}
+			}
+
+			private function _lazyLoad($p) {
+				assert(isset($this->_lazyObjects[$p]));
+
+				$tmpObj = call_user_func(array($this->_lazyObjects[$p]['Class'], 'get'), $this->_lazyObjects[$p]['ID']);
+
+				if (!is_object($tmpObj) or empty($tmpObj->ID)) {
+					throw new Exception("Attempted to set $p to invalid ID " . $this->_lazyObjects[$p]['ID']);
+				}
+
+				$this->$p = $tmpObj;
+
+				unset($this->_lazyObjects[$p]);
+			}
+
+			public static function loadAllLazyObjects(array $objects, $Property) {
+				$ids = array();
+				$class = false;
+
+				foreach ($objects as $o) {
+					if (array_key_exists($Property, $o->_lazyObjects)) {
+						$ids[] = $o->_lazyObjects[$Property]['ID'];
+						if (empty($class)) $class = $o->_lazyObjects[$Property]['Class'];
+					}
+				}
+				assert(!empty($class));
+
+				call_user_func(array($class, 'get'), $ids);
+			}
+
+			protected static function _find($class, array $constraints = array()) {
+				$SB = new ImpSQLBuilder(get_class_var($class, 'DBTable'));
+				$SB->addColumn('ID', 'integer');
+
+				foreach ($constraints as $k => $c) {
+					if (is_array($c)) {
+						if (count($c) > 1) throw new Exception('TODO: Support for operators other than the assumed =/IS/IN has not been implemented');
+						foreach ($c as $name => $value) {
+							$SB->addConstraint($name, $value);
+						}
+					} else {
+						if (is_integer($k)) {
+							$SB->addConstraint($c);
+						} else {
+							$SB->addConstraint($k, $c);
+						}
+					}
+				}
+
+				return call_user_func(array($class, 'get'), DBObject::$DB->queryValues($SB->generateSelect()));
+			}
+
+			protected static function _generateSelect($DBTable, $Properties, $Constraints) {
+				assert(!empty($Constraints));
+
+				$SQL = new ImpSQLBuilder($DBTable);
+				$SQL->addColumn('ID', 'integer');
+
+				foreach ($Properties as $name => $def) {
+					if (is_array($def)) {
+						assert(isset($def['type']));
+						$SQL->addColumn($name, $def['type']);
+					} else {
+						$SQL->addColumn($name, $def);
+					}
+				}
+
+				if (is_array($Constraints)) {
+					foreach ($Constraints as $c) {
+						$SQL->addConstraint($c);
+					}
+				} else {
+					$SQL->addConstraint($Constraints);
+				}
+				return $SQL->generateSelect();
+			}
+
+			public function save() {
+				$Q = new ImpSQLBuilder($this->DBTable);
+
+				foreach ($this->Properties as $P => $PropDef) {
+					if (is_array($PropDef)) {
+						$Type = $PropDef['type'];
+					} else {
+						$Type = $PropDef;
+					}
+
+					switch ($Type) {
+						case 'timestamp':
+							$Q->addValue($P, time(), 'time'); // CHANGED: timestamps are set to time() to avoid discrepancies between PHP and database timezones
+							break;
+
+						case 'datetime':
+						case 'date':
+							if ($P == 'Created' and $this->$P == 0) {
+								// We automatically set the Created column if it's unset:
+								$Q->addValue($P, time(), 'time');
+							} else {
+								$Q->addValue($P, intval($this->$P), 'time');
+							}
+							break;
+
+						case 'object':
+							// Convert from a full object to its ID:
+							if (!empty($this->$P)) {
+								$Q->addValue($P, is_object($this->$P) ? $this->$P->ID : (integer)$this->$P);
+							} else {
+								$Q->addValue($P, false);
+							}
+							break;
+
+						case 'boolean':
+							// Convert from boolean true/false to 1/0 for a BIT column
+							$Q->addValue($P, $this->$P ? 1 : 0);
+							break;
+
+						case 'set':
+							// We convert from an array of key => true/false to a
+							// comma separated string of the keys whose value was true.
+							// This matches the way the MySQL SET column type
+							// behaves.
+							$Q->addValue($P, implode(',', array_keys(array_filter($this->$P, array(&$this, '_is_true')))), 'set');
+							break;
+
+						case 'enum':
+							$Q->addValue($P, $this->$P, 'enum');
+							break;
+
+						case 'integer':
+							$Q->addValue($P, intval($this->$P));
+							break;
+
+						default:
+							$Q->addValue($P, $this->$P);
+					}
+				}
+
+				if (!empty($this->ID)) {
+					if ($this->_trackChanges) {
+						$this->recordChanges();
+					}
+
+					$Q->addConstraint('ID=' . $this->ID);
+					DBObject::$DB->execute($Q->generateUpdate());
+
+					assert(DBObject::$DB->getAffectedRowCount() <= 1);
+
+				} else {
+					DBObject::$DB->execute($Q->generateInsert());
+					$this->ID = DBObject::$DB->getLastInsertId();
+				}
 
 				return true;
 			}
 
+			public function setID($ID) {
+				// This function exists only for legacy code which predates the availability of __set():
+				$this->ID = $ID;
+			}
+
+			public function setProperty($name, $value) {
+				// This function exists only for legacy code which predates the availability of __set():
+				$this->$name = $value;
+			}
+
 			public function setProperties(array $A) {
 				// Sets object properties from an associative array such as the one returned
-				// by $DB->Query()
+				// by DBObject::$DB->query()
 
 				if (empty($A)) {
 					return false;
 				}
 
 				foreach ($A as $n => $v) {
-					$this->setProperty($n, $v);
+					$this->$n = $v;
 				}
 			}
 
+			private function filterFormFields($a) {
+				return (is_array($a) and !empty($a['formfield']) and ($a['formfield'] === true));
+			}
+
+			private function filterRequiredFormFields($a) {
+				return (is_array($a) and !empty($a['formfield']) and ($a['formfield'] === true) and !empty($a['required']) and ($a['required'] === true));
+			}
+
 			public function getFormFields() {
-				return array_keys(array_filter($this->Properties, create_function('$a', 'return (is_array($a) and !empty($a["formfield"]) and ($a["formfield"] === true));')));
+				return array_keys(array_filter($this->Properties, array($this, 'filterFormFields')));
 			}
 
 			public function getRequiredFormFields() {
-				return array_keys(array_filter($this->Properties, create_function('$a', 'return (is_array($a) and !empty($a["formfield"]) and ($a["formfield"] === true) and !empty($a["required"]) and ($a["required"] === true));')));
+				return array_keys(array_filter($this->Properties, array($this, 'filterRequiredFormFields')));
 			}
 
 			private static function _is_true($v) {
@@ -423,29 +519,26 @@
 			}
 
 			private function recordChanges() {
-				global $DB;
-
 				assert($this->_trackChanges === true);
 				assert(is_array($this->_initialValues));
 				assert(!empty($this->_initialValues));
 				assert(!empty($this->ID)); // We only track changes against stored data
 				assert(!empty($_SERVER['PHP_AUTH_USER']));
 
-				$Q = new ImpSQLBuilder("ChangeLog");
-				$Q->setDB($DB);
-				$Q->addValue("TargetTable", $this->DBTable);
-				$Q->addValue("RecordID", $this->ID);
-				$Q->addValue("Admin", $_SERVER['PHP_AUTH_USER']);
+				$Q = new ImpSQLBuilder('ChangeLog');
+				$Q->addValue('TargetTable', $this->DBTable);
+				$Q->addValue('RecordID', $this->ID);
+				$Q->addValue('Admin', $_SERVER['PHP_AUTH_USER']);
 
 				foreach ($this->Properties as $Name => $Type) {
 					$NewValue = $this->_convertValueToChangeString($this->$Name);
 					$OldValue = $this->_convertValueToChangeString($this->_initialValues[$Name]);
 
 					if (empty($this->_ignoreChanges[$Name]) and ($NewValue != $OldValue)) {
-						$Q->addValue("Property", $Name, "STRING");
-						$Q->addValue("OldValue", $OldValue, "STRING");
-						$Q->addValue("NewValue", $NewValue, "STRING");
-						$DB->execute($Q->generateInsert());
+						$Q->addValue('Property', $Name, 		'STRING');
+						$Q->addValue('OldValue', $OldValue, 'STRING');
+						$Q->addValue('NewValue', $NewValue, 'STRING');
+						DBObject::$DB->execute($Q->generateInsert());
 					}
 				}
 			}
@@ -461,13 +554,11 @@
 			}
 
 			public function getChanges() {
-				global $DB;
-
 				if (empty($this->ID)) {
 					return array();
 				}
 
-				return $DB->query("SELECT Admin, UNIX_TIMESTAMP(Time) AS Time, Property, OldValue, NewValue FROM ChangeLog WHERE TargetTable='{$this->DBTable}' AND RecordID = {$this->ID} ORDER BY Time, Property");
+				return DBObject::$DB->query("SELECT Admin, UNIX_TIMESTAMP(Time) AS Time, Property, OldValue, NewValue FROM ChangeLog WHERE TargetTable='{$this->DBTable}' AND RecordID = {$this->ID} ORDER BY Time, Property");
 			}
 
 			public function printChanges() {
@@ -496,18 +587,18 @@
 				foreach ($Changes as $Change) {
 					extract($Change, EXTR_PREFIX_ALL, 'Change');
 
-					$Change_Time = date("Y-M-d H:i:s", $Change_Time);
+					$Change_Time = date('Y-M-d H:i:s', $Change_Time);
 
 					switch ($this->Properties[$Change_Property]) {
-							case "datetime":
-							case "timestamp":
-								$Change_OldValue = date("Y-j-d H:i:s", $Change_OldValue);
-								$Change_NewValue = date("Y-j-d H:i:s", $Change_NewValue);
+							case 'datetime':
+							case 'timestamp':
+								$Change_OldValue = date('Y-j-d H:i:s', (int)$Change_OldValue); // These values are cast to avoid issues with values which had not been set and were thus NULL
+								$Change_NewValue = date('Y-j-d H:i:s', (int)$Change_NewValue); // TODO: remove the casts after ChangeLog is updated to serialize() its values
 								break;
 
-							case "date":
-								$Change_OldValue = date("Y-j-d", $Change_OldValue);
-								$Change_NewValue = date("Y-j-d", $Change_NewValue);
+							case 'date':
+								$Change_OldValue = date('Y-j-d', (int)$Change_OldValue);
+								$Change_NewValue = date('Y-j-d', (int)$Change_NewValue);
 								break;
 					}
 
@@ -528,9 +619,8 @@
 			}
 
 			public function getUniqueIdentifier() {
-				global $DB;
 				// Returns a generic reference which uniquely identifies this particular object in a reasonably persistent fashion:
-				return $DB->getUniqueIdentifier($this->DBTable, $this->ID);
+				return DBObject::$DB->getUniqueIdentifier($this->DBTable, $this->ID);
 			}
 
 			public static function defaultSortFunction($a, $b) {

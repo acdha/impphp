@@ -87,20 +87,16 @@
 		protected $PageSize;
 		protected $CurrentPage;
 
-		protected $DB;
+		static $DB;
 
 		function ImpSQLBuilder($table, $query_type = "SELECT") {
 			$this->Table = $table;
 			$this->queryType = strtoupper($query_type);
 		}
 
-		function setDB(ImpDB $DB) {
-			$this->DB = $DB;
-		}
-
 		function escape($data) {
-			if (!empty($this->DB)) {
-				return $this->DB->escape($data);
+			if (!empty(ImpSQLBuilder::$DB)) {
+				return ImpSQLBuilder::$DB->escape($data);
 			} else {
 				return mysql_real_escape_string($data); // Fall-back for legacy code
 			}
@@ -194,10 +190,10 @@
 					$a[$Key] = 'NULL';
 				} else {
 					switch (strtolower($Type)) {
-						case "time":
+						case 'time':
 								// Unix timestamps get special treatment; strings get treated as normal strings
 							if (is_integer($Value)) {
-								$a[$Key] = ($Value == 0) ? "NULL" : "FROM_UNIXTIME($Value)";
+								$a[$Key] = ($Value == 0) ? 'NULL' : "FROM_UNIXTIME($Value)";
 								break;
 							}
 
@@ -210,7 +206,7 @@
 							}
 							break;
 
-						case "string":
+						case 'string':
 							$a[$Key] = "'" . $this->escape($Value) . "'";
 							break;
 
@@ -233,8 +229,17 @@
 		}
 
 		function addConstraint($term) {
-			assert(is_string($term));
-			array_push($this->WhereTerms, $term);
+			if (func_num_args() == 1) {
+				array_push($this->WhereTerms, $term);
+				return;
+			}
+
+			list($name, $value) = func_get_args();
+			if (!is_array($value)) {
+				array_push($this->WhereTerms, "$name = " . ImpSQLBuilder::$DB->quote($value));
+			} else {
+				array_push($this->WhereTerms, "$name IN (" . implode(',', ImpSQLBuilder::$DB->quote($value)) . ')');
+			}
 		}
 
 		function generateWhereClause($Op = "AND") {

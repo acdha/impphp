@@ -16,12 +16,20 @@
 		protected $PDO;
 
 		function __construct($DSN, $Username = false, $Password = false, array $Options = array()) {
-			$this->PDO      = new PDO($DSN, $Username, $Password, $Options);
-			$this->DSN      = $DSN;
-			$this->Username = $Username;
-			$this->Password = $Password;
-			$this->Options  = $Options;
+			$this->PDO          = new PDO($DSN, $Username, $Password, $Options);
+			$this->DSN          = $DSN;
+			$this->Username     = $Username;
+			$this->Password     = $Password;
+			$this->Options      = $Options;
 			$this->setCharacterSet();
+
+			list($this->Scheme) = explode(':', $this->DSN, 2);
+
+			if ($this->Scheme == 'sqlite') {
+				// TODO: Find other MySQL-specific functions which could easily be mimiced for SQLite
+				$this->PDO->sqliteCreateFunction('FROM_UNIXTIME', create_function('$t', 'return date("Y-m-d H:i:s", $t);'));
+				$this->PDO->sqliteCreateFunction('UNIX_TIMESTAMP', create_function('$t', 'return strtotime($t);'));
+			}
 		}
 
 		function changeUser($Username, $Password) {
@@ -42,6 +50,10 @@
 
 		function getPerformanceCounters() {
 			$Status = array();
+
+			if ($this->getAttribute(PDO::ATTR_DRIVER_NAME) != 'mysql') {
+				return $Status;
+			}
 
 			foreach ($this->query('SHOW SESSION STATUS') as $row) {
 				$Status[$k] = $v;
@@ -84,9 +96,8 @@
 
 		function getUniqueIdentifier($Table, $ID) {
 			assert(!empty($this->DSN));
-			list($scheme, $options) = explode(':', $this->DSN, 2);
 
-			switch ($scheme) {
+			switch ($this->Scheme) {
 				case 'mysql':
 					if (preg_match('/host=([^;]+)/', $this->DSN, $matches)) {
 						$Server = $matches[1];
@@ -100,19 +111,30 @@
 					break;
 
 				case 'sqlite':
-					$Server = $_SERVER['HOSTNAME'];
-					$Database = $options;
+					$Server = getenv('HOSTNAME');
+					list(,$Database) = explode(':', $this->DSN, 2);
 					break;
 
 				default:
 					trigger_error('Unable to generate unique identifier for unknown ' . $protocol . ' connection', E_USER_ERROR);
 			}
 
-			return $scheme . '://' . rawurlencode($Server) . (!empty($Port) ? ":$Port" : '') . '/' . rawurlencode($Database) . '/' . rawurlencode($Table) . "#{$ID}";
+			return $this->Scheme . '://' . rawurlencode($Server) . (!empty($Port) ? ":$Port" : '') . '/' . rawurlencode($Database) . '/' . rawurlencode($Table) . "#{$ID}";
 		}
 
-		function quote($s) {
-			return trim($this->PDO->quote($s), "'"); // FIXME: Nasty legacy kludge until we want to separate escape() and quote()
+		function quote($v) {
+			return is_array($v) ? array_map(array($this->PDO, 'quote'), $v) : $this->PDO->quote($v);
+		}
+
+		function escape($v) {
+			 if (is_array($v)) {
+					foreach ($v as $k => $i) {
+						$v[$k] = trim($this->PDO->quote($v), "'");
+					}
+					return $v;
+			 } else {
+				 return trim($this->PDO->quote($v), "'");;
+			 }
 		}
 
 		function execute($sql) {

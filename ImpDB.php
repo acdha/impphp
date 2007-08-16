@@ -9,7 +9,8 @@
 		function query($sql);
 		function queryValue($sql);
 		function queryValues($sql);
-		function quote($s);
+		function escape($s); 	// Legacy-style, returns without enclosing quotes
+		function quote($s); 	// PDO-style, returns strings including enclosing quotes if needed
 		function setCharacterSet($charset = 'utf8');
 	}
 
@@ -62,9 +63,7 @@
 
 		function stopTimer($sql) {
 			if (!$this->profileQueries) {
-				if ($this->logQueries) {
-					$this->log($sql);
-				}
+				if ($this->logQueries) $this->log($sql);
 				return false;
 			}
 
@@ -117,7 +116,7 @@
 		function queryValue($sql) {
 			$args = func_get_args();
 			$rs = call_user_func_array(array($this, 'query'), $args);
-			return $rs ? array_first(array_first($rs)) : false;
+			return $rs ? reset(reset($rs)) : false;
 		}
 
 		function queryValues($sql) {
@@ -126,7 +125,7 @@
 			$rs = call_user_func_array(array($this, 'query'), $args);
 
 			foreach ($rs as $r) {
-				$ret[] = array_first($r);
+				$ret[] = reset($r);
 			}
 			return $ret;
 		}
@@ -159,10 +158,10 @@
 			$QueryTable->Caption          = $className . ': ' . number_format($TotalQueries) . ' queries in ' . number_format($this->cummulativeQueryTime, 3) . ' seconds';
 
 			$QueryTable->ColumnHeaders    = array(
-				'Query' => array('text' => 'SQL Statement', 	'type'=> 'string', 'sortable' => true),
-				'Count' => array('text' => 'Count', 					'type'=> 'number', 'sortable' => true, 'formatter' => $className .'_numberFormatter'),
-				'Time'	=> array('text' => 'Time (&micro;s)', 'type'=> 'number', 'sortable' => true, 'formatter' => $className .'_numberFormatter'),
-				'Cost'	=> array('text' => 'Cost', 						'type'=> 'number', 'sortable' => true, 'formatter' => $className .'_numberFormatter')
+				'Query' => array('text' => 'SQL Statement'),
+				'Count' => array('text' => 'Count', 					'formatter' => 'YAHOO.widget.DataTable.formatNumber'),
+				'Time'	=> array('text' => 'Time (&micro;s)', 'formatter' => 'YAHOO.widget.DataTable.formatNumber'),
+				'Cost'	=> array('text' => 'Cost', 						'formatter' => 'YAHOO.widget.DataTable.formatNumber')
 			);
 			?>
 					<style>
@@ -179,7 +178,7 @@
 						}
 
 						#<?=$className?>_Queries thead {
-							background-color: lightgrey;
+							background-color: lightgray;
 						}
 
 						#<?=$className?>_Queries a {
@@ -199,15 +198,6 @@
 							font-size: 9px;
 						}
 					</style>
-					<script>
-						function <?=$className?>_numberFormatter(elCell, oRecord, oColumn, oData) {
-							elCell.style.padding = "2pt";
-							elCell.style.textAlign = "right";
-							elCell.style.fontFamily = "monospace ! important";
-							elCell.style.font = "9px ProFont";
-							elCell.innerHTML = oData;
-						}
-					</script>
 			<?
 				$QueryTable->generate();
 		}

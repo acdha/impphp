@@ -253,8 +253,17 @@
 	}
 
 	function array_not_empty($input) {
-		// Returns a subset of an array containing only the non-empty values:
+		// Returns a subset of an array containing only the non-empty values. array_filter() is almost the same but ' ' != false while empty(' ') == false:
 		return array_filter($input, create_function('$i', 'return !empty($i);'));
+	}
+
+	function array_get_property(array $objects, $property_name) {
+		$result = array();
+		foreach ($objects as $o) {
+			$result[] = $o->$property_name;
+		}
+
+		return $result;
 	}
 
 	function cmp($a, $b) {

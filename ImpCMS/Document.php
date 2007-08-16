@@ -18,8 +18,8 @@
 		protected $DBTable       = 'Documents';
 		protected $_trackChanges = true;
 
-		var $Children;
-		var $Versions;
+		public $Children;
+		public $Versions;
 
 		public static function &get($id = false) {
 			return self::_getInstance(__CLASS__, $id);
