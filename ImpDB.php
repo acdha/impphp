@@ -175,6 +175,8 @@
 						#<?=$className?>_Queries caption {
 							font-weight: bold;
 							text-align: center;
+							background-color: #666699;
+							margin: 0;
 						}
 
 						#<?=$className?>_Queries thead {
@@ -191,11 +193,17 @@
 							padding-right: 1em;
 							font-weight: bold;
 							white-space: nowrap;
+							border: none;
 						}
 
 						#<?=$className?>_Queries td {
 							font-family: monospace;
 							font-size: 9px;
+							border: none;
+						}
+
+						#<?=$className?>_Queries tr:nth-child(odd) {
+							background-color: lightgreen;
 						}
 					</style>
 			<?

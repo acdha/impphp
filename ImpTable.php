@@ -143,13 +143,13 @@
 
 		<script type="text/javascript">
 			function generate_<?=$JSName?>() {
-				<?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
+				var <?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
 				<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
 				<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };
 				<?=$JSName?>_DataTable = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=json_encode($this->getYUIColumnDefinitions())?>, <?=$JSName?>_DataSource, <?=json_encode($this->getYUIDataTableOptions())?>);
 			}
 
-			window.ImpTable_Generators.push(generate_<?=$JSName?>);
+			ImpTable_Generators.push(generate_<?=$JSName?>);
 		</script>
 <?
 		}
