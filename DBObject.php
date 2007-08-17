@@ -161,8 +161,13 @@
 								case 'date':
 								case 'datetime':
 								case 'timestamp':
-									$this->$Name = 0;
+								case 'integer':
+									$this->$Name = (int)0;
 									break;
+
+								case 'double':
+								case 'currency':
+									$this->$Name = (double)0;
 
 								case 'string':
 								case 'enum':
@@ -621,6 +626,12 @@
 			public function getUniqueIdentifier() {
 				// Returns a generic reference which uniquely identifies this particular object in a reasonably persistent fashion:
 				return DBObject::$DB->getUniqueIdentifier($this->DBTable, $this->ID);
+			}
+
+			public function getETag() {
+				// Returns an HTTP Entity Tag value which is guaranteed to change if any of the component data changes
+				assert(!empty($this->ID));
+				return sha1(serialize($this->_initialValues));
 			}
 
 			public static function defaultSortFunction($a, $b) {
