@@ -138,9 +138,22 @@
 		}
 
 		function execute($sql) {
+			$args = func_get_args();
+			$sql = array_shift($args);
 			assert(!empty($sql));
+
 			$this->startTimer();
-			$this->lastRowCount = $this->exec($sql);
+
+			if (empty($args)) {
+				$ret = call_user_func_array(array($this->PDO, 'query'), $sql)->fetchAll(PDO::FETCH_ASSOC);
+			} else {
+				$st = $this->PDO->prepare($sql);
+				if (!$st) {
+					throw new Exception("Unable to prepare '$sql': " . kimplode($this->PDO->errorInfo()));
+				}
+				$this->lastRowCount = $st->execute($args);
+			}
+
 			$this->stopTimer($sql);
 		}
 
