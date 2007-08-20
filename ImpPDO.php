@@ -145,7 +145,7 @@
 			$this->startTimer();
 
 			if (empty($args)) {
-				$ret = call_user_func_array(array($this->PDO, 'query'), $sql)->fetchAll(PDO::FETCH_ASSOC);
+				$this->lastRowCount = $this->PDO->exec($sql);
 			} else {
 				$st = $this->PDO->prepare($sql);
 				if (!$st) {
