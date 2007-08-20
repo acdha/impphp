@@ -355,17 +355,18 @@
 				$SB->addColumn('ID', 'integer');
 
 				foreach ($constraints as $k => $c) {
-					if (is_array($c)) {
-						if (count($c) > 1) throw new Exception('TODO: Support for operators other than the assumed =/IS/IN has not been implemented');
-						foreach ($c as $name => $value) {
-							$SB->addConstraint($name, $value);
+					if (empty($c)) continue;
+
+					if (is_integer($k)) {
+						if (is_array($c)) {
+							foreach ($c as $name => $value) {
+								$SB->addConstraint($name, $value);
+							}
+						} else {
+							$SB->addConstraint($c);
 						}
 					} else {
-						if (is_integer($k)) {
-							$SB->addConstraint($c);
-						} else {
-							$SB->addConstraint($k, $c);
-						}
+						$SB->addConstraint($k, $c);
 					}
 				}
 
