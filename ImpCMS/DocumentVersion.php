@@ -49,5 +49,8 @@
 			unset($this->Creator);
 		}
 
+		static function defaultSortFunction($a, $b) {
+			return cmp($a->Modified, $b->Modified);
+		}
 	}
 ?>

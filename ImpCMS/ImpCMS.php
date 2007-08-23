@@ -27,7 +27,7 @@
 	require_once('ImpUtils/ImpSingleton.php');
 
 	require_once("ImpUtils/ImpCMS/Document.php");
-	require_once("ImpUtils/ImpCMS/DocumentVersions.php");
+	require_once("ImpUtils/ImpCMS/DocumentVersion.php");
 	require_once("ImpUtils/ImpCMS/EventDispatcher.php");
 	require_once("ImpUtils/ImpCMS/PermissionManager.php");
 

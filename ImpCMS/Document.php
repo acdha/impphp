@@ -47,8 +47,6 @@
 		}
 
 		function getBody() {
-			global $DB;
-
 			if (empty($this->Visible)) {
 				error_log("Client {$_SERVER['REMOTE_ADDR']} requested invisible document #{$this->ID}");
 				return '<p class="Notice">This document is being edited</p>';
@@ -70,10 +68,9 @@
 		}
 
 		function getVersions() {
-			global $DB;
-
 			if (!isset($this->Versions)) {
-				$this->Versions = DocumentVersion::get($DB->queryValues("SELECT ID FROM DocumentVersions WHERE Document={$this->ID} AND Deleted IS NULL ORDER BY Modified"));
+				$this->Versions = DocumentVersion::get(Document::$DB->queryValues("SELECT ID FROM DocumentVersions WHERE Document={$this->ID} AND Deleted IS NULL ORDER BY Modified"));
+				usort($this->Versions, array('DocumentVersion', 'defaultSortFunction'));
 			}
 
 			return $this->Versions;
@@ -110,8 +107,6 @@
 			 * Returns an array of references to child Documents
 			 */
 		function getChildren($limit = false, $ShowAll = false) {
-			global $DB;
-
 			// Limit allows us to artificially restrict children to the first $limit according to the default sort order
 			if (empty($this->ID)) return;
 
@@ -120,7 +115,8 @@
 				// TODO: Make sure we avoid calling getChildren() where possible
 				// TODO: Change this to use DBObject::find() once that interface is mature
 				// TODO: this needs to use the defined child sort key settings for this document
-				$this->Children = Document::get($DB->queryValues("SELECT ID FROM Documents WHERE Parent = $this->ID" . ($ShowAll ? "" : " AND Visible=1") . ($limit ? " LIMIT $limit" : "")));
+				$this->Children = Document::get(Document::$DB->queryValues("SELECT ID FROM Documents WHERE Parent = $this->ID" . ($ShowAll ? "" : " AND Visible=1") . ($limit ? " LIMIT $limit" : "")));
+				usort($this->Children, array('Document', 'defaultSortFunction'));
 			}
 
 			assert(is_array($this->Children));
@@ -129,8 +125,7 @@
 		}
 
 		function getChildByName($Name) {
-			global $DB;
-			$cid = $DB->queryValue('SELECT ID FROM Documents WHERE Parent = ? AND Title = ?', $this->ID, $Name);
+			$cid = Document::$DB->queryValue('SELECT ID FROM Documents WHERE Parent = ? AND Title = ?', $this->ID, $Name);
 			if (empty($cid)) {
 				return false;
 			}
@@ -143,7 +138,7 @@
 		 * Returns a Document object for the most recently modified child
 		 */
 		function getLastModifiedChild() {
-			return Document::get($DB->queryValue("SELECT ID FROM Documents WHERE Parent = ? AND Visible = 'True' ORDER BY Modified DESC LIMIT 1", $this->ID));
+			return Document::get(Document::$DB->queryValue("SELECT ID FROM Documents WHERE Parent = ? AND Visible = 'True' ORDER BY Modified DESC LIMIT 1", $this->ID));
 		}
 
 		/**
@@ -160,6 +155,9 @@
 			return $this->Resources;
 		}
 
+		static function defaultSortFunction($a, $b) {
+			return strcasecmp($a->Title, $b->Title);
+		}
 
 	}
 ?>

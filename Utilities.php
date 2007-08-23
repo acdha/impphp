@@ -15,12 +15,13 @@
 	 *
 	 */
 	function ImpDie($message) {
+		header('HTTP/1.1 500 Fatal Error');
 
 		// If we're in debug mode, don't bother dumping the boilerplate
 		if (!(defined("IMP_DEBUG") && IMP_DEBUG)) {
 			// Use a site-specific error message if one has been defined:
 			if (defined("IMP_FATAL_ERROR_MESSAGE")) {
-				print IMPDIE_MESSAGE;
+				print IMP_FATA_ERROR_MESSAGE;
 			} else {
 				print "<p>An error occurred while processing your request. The administrator has been notified.</p>";
 
@@ -74,6 +75,7 @@
 
 		$ErrorType = isset($ErrorTypes[$error]) ? $ErrorTypes[$error] : 'Unknown';
 
+
 		// If IMP_DEBUG is defined we make everything fatal - otherwise we abort for anything else than an E_STRICT:
 		$fatal = (defined("IMP_DEBUG") and IMP_DEBUG) ? true : ($error != E_STRICT);
 
@@ -103,10 +105,15 @@
 
 		error_log(__FUNCTION__ . ": $ErrorType in $file on line $line: " . quotemeta($message) . (!empty($dbt) ? ' (Began at ' . kimplode(array_filter_keys(array_last($dbt), array('file', 'line'))) . ')' : ''));
 
-		if ($fatal) exit(1);
+		if ($fatal) {
+			header("HTTP/1.1 500 $ErrorType");
+			exit(1);
+		}
 	}
 
 	function ImpExceptionHandler(Exception $e) {
+		header('HTTP/1.1 500 Fatal Error');
+
 		if (!defined('IMP_DEBUG') or !IMP_DEBUG) {
 			if (defined('IMP_FATAL_ERROR_MESSAGE')) {
 				echo '<div>', IMP_FATAL_ERROR_MESSAGE, '</div>';
@@ -128,6 +135,8 @@
 	}
 
 	function ImpAssertHandler($file, $line, $code) {
+		header('HTTP/1.1 500 Fatal Error');
+
 		if (!defined('IMP_DEBUG') or !IMP_DEBUG) {
 			if (defined('IMP_FATAL_ERROR_MESSAGE')) {
 				echo '<div>', IMP_FATAL_ERROR_MESSAGE, '</div>';

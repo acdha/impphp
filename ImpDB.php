@@ -145,7 +145,7 @@
 				$TotalQueries += $v['Count'];
 			}
 
-			assert($TotalQueries = $this->queryCount);
+			assert($TotalQueries == $this->queryCount);
 
 			$className = get_class($this);
 
