@@ -15,7 +15,7 @@
 	 *
 	 */
 	function ImpDie($message) {
-		header('HTTP/1.1 500 Fatal Error');
+		if (!headers_sent()) header('HTTP/1.1 500 Fatal Error');
 
 		// If we're in debug mode, don't bother dumping the boilerplate
 		if (!(defined("IMP_DEBUG") && IMP_DEBUG)) {
@@ -106,13 +106,13 @@
 		error_log(__FUNCTION__ . ": $ErrorType in $file on line $line: " . quotemeta($message) . (!empty($dbt) ? ' (Began at ' . kimplode(array_filter_keys(array_last($dbt), array('file', 'line'))) . ')' : ''));
 
 		if ($fatal) {
-			header("HTTP/1.1 500 $ErrorType");
+			if (!headers_sent()) header("HTTP/1.1 500 $ErrorType");
 			exit(1);
 		}
 	}
 
 	function ImpExceptionHandler(Exception $e) {
-		header('HTTP/1.1 500 Fatal Error');
+		if (!headers_sent()) header('HTTP/1.1 500 Fatal Error');
 
 		if (!defined('IMP_DEBUG') or !IMP_DEBUG) {
 			if (defined('IMP_FATAL_ERROR_MESSAGE')) {
@@ -135,7 +135,7 @@
 	}
 
 	function ImpAssertHandler($file, $line, $code) {
-		header('HTTP/1.1 500 Fatal Error');
+		if (!headers_sent()) header('HTTP/1.1 500 Fatal Error');
 
 		if (!defined('IMP_DEBUG') or !IMP_DEBUG) {
 			if (defined('IMP_FATAL_ERROR_MESSAGE')) {
@@ -330,6 +330,7 @@
 		 * Generates headers which should cause the page to be reloaded completely each time
 		 * In practice, IE5 frequently ignores the HTTP standard.
 		 */
+		assert(!headers_sent());
 		header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");									// Date in the past
 		header("Last-Modified: " . gmdate('r'));													// always modified
 		header("Cache-Control: no-cache, must-revalidate");								// HTTP/1.1
@@ -337,6 +338,7 @@
 	}
 
 	function check_client_cache($current_etag, $current_mtime, $max_age = 3600) {
+		assert(!headers_sent());
 		assert(!empty($current_etag));
 		assert($max_age > 0);
 
