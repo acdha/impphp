@@ -24,8 +24,8 @@
 		var $Attributes        = array("class" => "ImpTable");
 		var $DefaultSortOrder  = "Ascending";
 		var $DefaultSortKey;
-		protected $_SortKey;
-		protected $_SortOrder;
+		private $_SortKey;
+		private $_SortOrder;
 
 		protected static $JS_Initialized = false;
 
@@ -40,23 +40,8 @@
 			if (!empty($this->_autoSorted)) return;
 			$this->_autoSorted = true;
 
-			if (empty($Key) and !empty($_REQUEST['SortKey'])) {
-				$this->_SortKey = $_REQUEST['SortKey'];
-			}
-
-			if (empty($Order) and !empty($_REQUEST['SortOrder'])) {
-				$this->_SortOrder = $_REQUEST['SortOrder'];
-			}
-
-			if (empty($this->_SortOrder)) {
-				$this->_SortOrder = $this->DefaultSortOrder;
-			}
-
-			$this->_SortOrder = $this->_SortOrder == "Descending" ? "Descending" : "Ascending";
-
-			if (empty($this->_SortKey)) {
-				$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : current(array_keys(reset($this->Data)));
-			}
+			$this->_SortOrder = $this->DefaultSortOrder == 'Descending' ? 'Descending' : 'Ascending';
+			$this->_SortKey = !empty($this->DefaultSortKey) ? $this->DefaultSortKey : current(array_keys(reset($this->Data)));
 
 			assert(array_key_exists($this->_SortKey, reset($this->Data)));
 
