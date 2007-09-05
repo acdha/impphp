@@ -70,7 +70,7 @@
 		function getVersions() {
 			if (!isset($this->Versions)) {
 				$this->Versions = DocumentVersion::get(Document::$DB->queryValues("SELECT ID FROM DocumentVersions WHERE Document={$this->ID} AND Deleted IS NULL ORDER BY Modified"));
-				usort($this->Versions, array('DocumentVersion', 'defaultSortFunction'));
+				uasort($this->Versions, array('DocumentVersion', 'defaultSortFunction'));
 			}
 
 			return $this->Versions;
@@ -116,7 +116,7 @@
 				// TODO: Change this to use DBObject::find() once that interface is mature
 				// TODO: this needs to use the defined child sort key settings for this document
 				$this->Children = Document::get(Document::$DB->queryValues("SELECT ID FROM Documents WHERE Parent = $this->ID" . ($ShowAll ? "" : " AND Visible=1") . ($limit ? " LIMIT $limit" : "")));
-				usort($this->Children, array('Document', 'defaultSortFunction'));
+				uasort($this->Children, array('Document', 'defaultSortFunction'));
 			}
 
 			assert(is_array($this->Children));
