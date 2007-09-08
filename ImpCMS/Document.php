@@ -43,7 +43,7 @@
 
 		function getETag() {
 			// Returns a value suitable for use as an HTTP Entity Tag
-			return sha1($this->Modified . $this->DisplayVersion->ID . $this->DisplayVersion->Modified);
+			return sha1(serialize($this->Modified . (is_object($this->DisplayVersion) ? $this->DisplayVersion->ID . $this->DisplayVersion->Modified : false)));
 		}
 
 		function getBody() {

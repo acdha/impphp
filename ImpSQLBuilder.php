@@ -201,6 +201,8 @@
 						case 'enum':
 							if (is_array($Value)) {
 								$a[$Key] = "'" . $this->escape(implode(',', $Value)) . "'";
+							} elseif (empty($Value)) {
+								 $a[$Key] = 'NULL';
 							} else {
 								$a[$Key] = "'" . $this->escape($Value) . "'";
 							}
