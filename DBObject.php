@@ -300,7 +300,7 @@
 
 										$tmp = $this->Properties[$name]['default'];
 
-										foreach (explode(',', $value) as $n) {
+										foreach (array_filter(explode(',', $value)) as $n) {
 											$tmp[$n] = true;
 										}
 
@@ -454,7 +454,7 @@
 							break;
 
 						default:
-							$Q->addValue($P, $this->$P);
+							$Q->addValue($P, empty($this->$P) ? false : $this->$P);
 					}
 				}
 
