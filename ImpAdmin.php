@@ -1,17 +1,17 @@
 <?php
 
 	class ImpAdmin {
-		var $Rights;
+		private $Rights;
 
-		var $DefaultUserID;
-		var $DefaultArea;
+		public $DefaultUserID;
+		public $DefaultArea;
 
 		function _getUserID($UserID) {
 			// This function contains the common code needed to sanitized and check a passed UserID, falling back to $this->DefaultUserID if it exists
 			$UserID = intval($UserID);
 
 			if (empty($UserID) and empty($this->DefaultUserID)) {
-				trigger_error('A valid UserID was not provided and no default exists', E_USER_ERROR);
+				throw new Exception('A valid UserID was not provided and no default exists');
 				return false;
 			}
 
@@ -21,7 +21,7 @@
 		function _getArea($Area) {
 			// This function contains the common code needed to sanitized and check a passed Area, falling back to $this->DefaultArea if it exists
 			if (empty($Area) and empty($this->DefaultArea)) {
-				trigger_error('A valid Area was not provided and no default exists', E_USER_ERROR);
+				throw new Exception('A valid Area was not provided and no default exists');
 				return false;
 			}
 
@@ -44,7 +44,7 @@
 			$UserID = $this->_getUserID($UserID);
 
 			if (empty($UserID)) {
-				trigger_error(__METHOD__ . "() called with an invalid user ID", E_USER_ERROR);
+				throw new Exception(__METHOD__ . "() called with an invalid user ID");
 				return false;
 			}
 
@@ -79,7 +79,7 @@
 
 			$this->Rights[$UserID] = array();
 
-			$Areas = $DB->query("SELECT AreaID, Rights, Name, URL FROM AdminAreaRights INNER JOIN AdminAreas ON AreaID=AdminAreas.ID WHERE UserID = $UserID");
+			$Areas = $DB->query("SELECT AreaID, Rights, Name, URL FROM AdminAreaRights INNER JOIN AdminAreas ON AreaID=AdminAreas.ID WHERE UserID = ?", $UserID);
 
 			foreach ($Areas as $Area) {
 				$Area['Rights'] = explode(',', $Area['Rights']); // Convert this from a comma-separated list to an array
@@ -108,11 +108,11 @@
 			ksort($this->AdminAreas);
 		}
 
-		function setUserRights($UserID, $AreaName, $Rights) {
+		function setUserRights($UserID, $AreaName, array $Rights) {
 			global $DB;
 
-			assert(is_array($Rights));
-			assert(is_integer($UserID));
+			$UserID = (integer) $UserID;
+			assert(!empty($UserID));
 
 			$this->loadAdminAreas();
 
@@ -120,11 +120,16 @@
 			assert(!empty($AreaID));
 
 			$DB->execute("BEGIN");
-			$DB->execute("DELETE FROM AdminAreaRights WHERE UserID=$UserID and AreaID=$AreaID");
-			if (!empty($Rights)) {
-				$DB->execute("INSERT INTO AdminAreaRights (UserID, AreaID, Rights) VALUES ($UserID, $AreaID, '" . implode(',', $Rights) . "')");
+			try {
+				$DB->execute("DELETE FROM AdminAreaRights WHERE UserID=$UserID and AreaID=?", $AreaID);
+				if (!empty($Rights)) {
+					$DB->execute("INSERT INTO AdminAreaRights (UserID, AreaID, Rights) VALUES ($UserID, $AreaID, '" . implode(',', $Rights) . "')");
+				}
+				$DB->execute("COMMIT");
+			} catch (Exception $e) {
+				$DB->execute('ROLLBACK');
+				throw $e;
 			}
-			$DB->execute("COMMIT");
 
 			if (isset($this->Rights[$UserID])) {
 				unset($this->Rights[$UserID]); // Clear out the cache for this user to avoid any discrepancies
