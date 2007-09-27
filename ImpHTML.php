@@ -1,4 +1,6 @@
 <?php
+	require_once('ImpUtils/Utilities.php');
+
 	class ImpHTML {
 		var $original;
 
@@ -25,7 +27,7 @@
 			$output = stripslashes($this->original);
 
 			if (!$this->hasBlockFormatting && !$this->hasDisplayFormatting && !$this->hasLinks) {
-				$output = htmlspecialchars($output);
+				$output = html_encode($output);
 			}
 
 			if (!$this->hasBlockFormatting) {
@@ -117,11 +119,11 @@
 			} else {
 				if (is_array($selected_value)) {
 					foreach ($query_results as $row) {
-						$html .= "<option value=\"{$row['ID']}\"" . (in_array($row['ID'], $selected_value) ? " SELECTED" : "") . ">" . htmlspecialchars($row['Value']) . "</option>\n";
+						$html .= "<option value=\"{$row['ID']}\"" . (in_array($row['ID'], $selected_value) ? " SELECTED" : "") . ">" . html_encode($row['Value']) . "</option>\n";
 					}
 				} else {
 					foreach ($query_results as $row) {
-						$html .= "<option value=\"{$row['ID']}\"" . ($row['ID'] == $selected_value ? " SELECTED" : "") . ">" . htmlspecialchars($row['Value']) . "</option>\n";
+						$html .= "<option value=\"{$row['ID']}\"" . ($row['ID'] == $selected_value ? " SELECTED" : "") . ">" . html_encode($row['Value']) . "</option>\n";
 					}
 				}
 			}
@@ -280,7 +282,7 @@
 			// Generates hidden inputs for the key=>value pairs in the passed array:
 
 			foreach ($source as $k => $v) {
-				print '<input type="hidden" name="' . htmlspecialchars($k) . '" value="' . htmlspecialchars($v) . '">';
+				print '<input type="hidden" name="' . html_encode($k) . '" value="' . html_encode($v) . '">';
 			}
 		}
 
@@ -296,7 +298,7 @@
 
 			foreach ($parts as $part) {
 				$prefix .= "/$part";
-				array_push($crumbs, '<a href="' . htmlspecialchars($prefix) . '">' . htmlspecialchars($part) . '</a>');
+				array_push($crumbs, '<a href="' . html_encode($prefix) . '">' . html_encode($part) . '</a>');
 			}
 
 			// Implode avoids us needing to check for and suppress the separator after the last element:
@@ -308,8 +310,8 @@
 		}
 
 		public static function makeSafeLink($URL, $Title) {
-			$Title	= htmlspecialchars($Title);
-			$URL		= htmlspecialchars(trim($URL));
+			$Title	= html_encode($Title);
+			$URL		= html_encode(trim($URL));
 			$uParts = @parse_url($URL);
 
 			if (
