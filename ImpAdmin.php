@@ -53,11 +53,17 @@
 		}
 
 		function hasRight($Right, $Area = false, $UserID = false) {
+			/*
+				$Right may be:
+				 	- a single value (e.g. "Create") in $Area
+				 	- an array containing multiple values in $Area
+				  - an array containing AreaName => Right values
+			 */
 			$UserID = $this->_getUserID($UserID);
 			$Area = $this->_getArea($Area);
 
 			assert(is_string($Area) and !empty($Area));
-			assert(is_string($Right) and !empty($Right));
+			assert(!empty($Right));
 
 			$this->loadRightsForUser($UserID);
 
@@ -65,7 +71,24 @@
 				return false;
 			}
 
-			return in_array($Right, $this->Rights[$UserID][$Area]['Rights']);
+			$result = true;
+
+			if (is_array($Right)) {
+				foreach ($Right as $k => $v) {
+					if (is_integer($k)) {
+						if (!in_array($v, $this->Rights[$UserID][$Area]['Rights'])) {
+							$result = false; break;
+						}
+					} else {
+						if (empty($this->Rights[$UserID][$k]) or !in_array($v, $this->Rights[$UserID][$k]['Rights'])) {
+							$result = false;	break;
+						}
+					}
+				}
+			} else {
+				$result = in_array($Right, $this->Rights[$UserID][$Area]['Rights']);
+			}
+			return $result;
 		}
 
 		function loadRightsForUser($UserID = false) {
