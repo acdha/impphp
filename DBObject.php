@@ -125,6 +125,7 @@
 				if (!empty($ID)) {
 					if (is_array($ID)) {
 						$this->setProperties($ID);
+						$this->_initialValues = $ID;
 					}	else {
 						$ID = intval($ID);
 
@@ -145,7 +146,7 @@
 					}
 				} else {
 					foreach ($this->Properties as $Name => $def) {
-						if (isset($this->$Name)) continue; // Ignore any values which have already been defined
+						assert(!isset($this->$Name));
 
 						if (is_array($def)) {
 							assert(isset($def['type']));
@@ -186,7 +187,7 @@
 									break;
 
 								default:
-									trigger_error('No default for property of type ' . $Type, E_USER_NOTICE);
+									throw new Exception('No default for property of type ' . $Type);
 							}
 						}
 
