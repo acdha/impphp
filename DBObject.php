@@ -146,8 +146,6 @@
 					}
 				} else {
 					foreach ($this->Properties as $Name => $def) {
-						assert(!isset($this->$Name));
-
 						if (is_array($def)) {
 							assert(isset($def['type']));
 							$Type = $def['type'];
