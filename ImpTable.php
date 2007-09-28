@@ -102,8 +102,8 @@
 			if (!ImpTable::$JS_Initialized) {
 				ImpTable::$JS_Initialized = true;
 ?>
-		<script src="http://yui.yahooapis.com/2.3.0/build/yahoo/yahoo-min.js" type="text/javascript"></script>
-		<script src="http://yui.yahooapis.com/2.3.0/build/yuiloader/yuiloader-beta-min.js" type="text/javascript"></script>
+		<script src="http://yui.yahooapis.com/2.3.1/build/yahoo/yahoo-min.js" type="text/javascript"></script>
+		<script src="http://yui.yahooapis.com/2.3.1/build/yuiloader/yuiloader-beta-min.js" type="text/javascript"></script>
 		<script type="text/javascript" charset="utf-8">
 			ImpTable_Generators = new Array();
 
@@ -115,8 +115,8 @@
 				ImpTable_Loader.insert(function() { while(f = ImpTable_Generators.pop()){ f(); } });
 			}
 		</script>
-<? 
-		} 
+<?
+		}
 
 		echo '<div ';
 		foreach ($this->Attributes as $k => $v) {
