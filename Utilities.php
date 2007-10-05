@@ -295,7 +295,7 @@
 			return file_get_contents($filename);
 		}
 
-		$contents = "";
+		$contents = NULL;
 		$fp = fopen($filename, "r") or ImpDie("read_file: couldn't open $filename");
 		while (!feof($fp)) {
 			$contents .= fread($fp, 16384);
@@ -370,15 +370,16 @@
 	}
 
 	function import_vars() {
-		// Pulls in the named variables from $_REQUEST or initializes them to "" if they weren't passed:
+		// Creates global variables for the passed variable names which will either
+		// be empty or the value of $_REQUEST[Name], de-magic-quoted if needed
 
 		foreach (func_get_args() as $var) {
 			if (is_array($var)) {
 				foreach ($var as $v) {
-					$GLOBALS[$v] = array_key_exists($v, $_REQUEST) ? strip_magic_quotes($_REQUEST[$v]) : "";
+					$GLOBALS[$v] = array_key_exists($v, $_REQUEST) ? strip_magic_quotes($_REQUEST[$v]) : NULL;
 				}
 			} else {
-				$GLOBALS[$var] = array_key_exists($var, $_REQUEST) ? strip_magic_quotes($_REQUEST[$var]) : "";
+				$GLOBALS[$var] = array_key_exists($var, $_REQUEST) ? strip_magic_quotes($_REQUEST[$var]) : NULL;
 			}
 		}
 	}
