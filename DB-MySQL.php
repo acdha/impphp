@@ -54,6 +54,8 @@
 		var $_displayQueries = false;
 		var $_profileQueries = false;
 
+		var $dbCharset = 'utf8';
+
 		function DB_MySQL() {
 			/**
 			 * The constructor can either be called with an existing database handle
@@ -191,6 +193,8 @@
 			$this->Handle = $connect_func($this->Server, $this->User, $this->Password) or trigger_error(__CLASS__ . "::" . __FUNCTION__ . "() $connect_func() failed: " . mysql_error(), E_USER_ERROR);
 
 			mysql_selectdb($this->Name, $this->Handle) or trigger_error(__CLASS__ . "::" . __FUNCTION__ . "() mysql_selectdb() failed: " . mysql_error($this->Handle), E_USER_ERROR);
+
+      $this->execute("SET NAMES '" . $this->dbCharset . "'");
 
 			$this->_stopTimer(__CLASS__ . "->" . __FUNCTION__ . "() using $connect_func({$this->Server}, ...)");
 		}
