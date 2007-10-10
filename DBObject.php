@@ -179,7 +179,7 @@
 					return $this->$p;
 				} elseif (array_key_exists($p, $this->Properties)) {
 					if (is_array($this->Properties[$p]) and $this->Properties[$p]['type'] == 'collection') {
-						return $this->_loadCollection($p);
+						return (array) $this->_loadCollection($p); // FIXME: cast to work around a bug in PHP < 5.2.4 which causes returned arrays to be read-only which breaks e.g. foreach because they update the internal array pointer
 					} else {
 						return null;
 					}
