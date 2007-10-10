@@ -96,7 +96,7 @@
 			return implode("&", $res);
 		}
 
-		public static function generateSelectFromQuery(&$DB, $query, $select_name, $selected_value = false, $multiple = false) {
+		public static function generateSelectFromQuery(ImpDB $DB, $query, $select_name, $selected_value = false, $multiple = false) {
 			/*
 			 * returns a string containing an HTML SELECT seeded with the results of $query.
 			 * $query should be a SQL SELECT statement where the first column will be some sort of identifier
@@ -104,7 +104,6 @@
 			 * as the text of the option.
 			 * If supplied, any ID value (col 1) matching $selected_value will be SELECTED.
 			 */
-			assert(is_object($DB));
 
 			$html = "<select name=\"$select_name\"" . ($multiple ? " multiple" : "") . ">\n";
 
@@ -132,12 +131,11 @@
 			return $html;
 		}
 
-		public static function generateSelectForEnum(&$DB, $table, $column, $selected_value = false) {
+		public static function generateSelectForEnum(ImpDB $DB, $table, $column, $selected_value = false) {
 			/*
 			 * Similar to generateSelectFromQuery but this simplifies the result of creating
-			 * a <SELECT> for all of the valid values of a MySQL ENUM column.
+			 * a select for all of the valid values of a MySQL ENUM column.
 			 */
-			assert(is_object($DB));
 
 			$html = "<select name=\"$column\">\n";
 
@@ -146,16 +144,16 @@
 			$html .= "<option value=\"\">Select...</option>\n";
 
 			if (!$query_results) {
-				trigger_error("Could not load definition for ENUM $column in $table:\nError: " + mysql_errno() . ":\n" . mysql_error(), E_USER_ERROR);
+				throw new RuntimeException("Could not load definition for ENUM $column in $table");
 			} else {
 				/*
 						The results will be a single row like this:
 
 						mysql> describe Transactions Status;
 						+--------+------------------------------------------------------+------+-----+---------+-------+
-						| Field | Type																								 | Null | Key | Default | Extra |
+						| Field | Type																								  | Null | Key | Default | Extra |
 						+--------+------------------------------------------------------+------+-----+---------+-------+
-						| Status | enum('Pending','Approved','Declined','System Error') |			|		 | Pending |			 |
+						| Status | enum('Pending','Approved','Declined','System Error') |	  	 |		 | Pending |			 |
 						+--------+------------------------------------------------------+------+-----+---------+-------+
 
 						We're interested in the Type column. We need to strip the enum('') wrapper off
@@ -178,6 +176,32 @@
 			$html .=	"</select>\n";
 			return $html;
 		}
+
+		public static function generateCheckboxesForSet(ImpDB $DB, $table, $column, array $selected_values = array()) {
+			// Similar to generateSelectForEnum but this generates a checkbox for each possible value of a SET
+			$query_results = $DB->query("DESCRIBE $table $column");
+			if (empty($query_results)) {
+				throw new RuntimeException("Could not load definition for ENUM $column in $table");
+			}
+
+			$Type                      = $query_results[0]['Type'];
+			assert(substr($Type, 0, 5) == "set('");
+			assert(substr($Type, -2)   == "')");
+			$Type                      = substr($Type, 5, -2);
+
+			$Options = explode("','", $Type);
+
+			$html = '';
+
+			foreach ($Options as $o) {
+				$o_val = html_encode($o);
+				$o_id = ImpHTML::makeSafeCSSName($column . $o);
+				$html .= '<input type="checkbox" id="' . $o_id .'" name="' . html_encode($column) . '[' . $o_val . ']" ' . (in_array($o, $selected_values) ? " CHECKED" : "") . '><label for="' . $o_id .'">' . $o_val . '</label><br/>';
+			}
+
+			return $html;
+		}
+
 
 		public static function generateSelectFromArray(array $the_array, $select_name, $selected_value = false, $use_value_as_key = false) {
 			/*

@@ -96,7 +96,7 @@
 
 		function escape($data) {
 			if (!empty(ImpSQLBuilder::$DB)) {
-				return ImpSQLBuilder::$DB->escape($data);
+				return self::$DB->escape($data);
 			} else {
 				return mysql_real_escape_string($data); // Fall-back for legacy code
 			}
@@ -238,9 +238,9 @@
 
 			list($name, $value) = func_get_args();
 			if (!is_array($value)) {
-				array_push($this->WhereTerms, "$name = " . ImpSQLBuilder::$DB->quote($value));
+				array_push($this->WhereTerms, "$name = " . self::$DB->quote($value));
 			} else {
-				array_push($this->WhereTerms, "$name IN (" . implode(',', ImpSQLBuilder::$DB->quote($value)) . ')');
+				array_push($this->WhereTerms, "$name IN (" . implode(',', self::$DB->quote($value)) . ')');
 			}
 		}
 

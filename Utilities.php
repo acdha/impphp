@@ -40,7 +40,7 @@
 	/**
 	 * A replacement error handler with improved debugging features
 	 * - Backtraces including function parameters will be printed using TextMate URLs when running on localhost
-	 * - No output will be generated if IMP_DEBUG is not defined and true
+	 * - Only the IMP_FATAL_ERROR_MESSAGE will be displayed if IMP_DEBUG is not defined and true
 	 * - Most errors (all if IMP_DEBUG is true, < E_STRICT otherwise) are fatal to avoid continuing in abnormal situations
 	 * - Errors will always be recorded using error_log()
 	 * - MySQL's error will be printed if non-empty

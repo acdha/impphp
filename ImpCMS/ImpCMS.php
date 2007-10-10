@@ -64,7 +64,7 @@ class ImpCMS {
 				assert(defined("IMPCMS_DB_USER_PASSWORD"));
 				$this->DB = new PDO('mysql:host=' . IMPCMS_DB_SERVER . ';dbname=' . IMPCMS_DB_NAME, IMPCMS_DB_NAME, IMPCMS_DB_USER, IMPCMS_DB_USER_PASSWORD);
 			} else {
-				//FIXME: assert($DB instanceof ImpDBO);
+				//TODO: assert($DB instanceof ImpDBO);
 				$this->DB =& $DB;
 			}
 
@@ -123,18 +123,14 @@ class ImpCMS {
 			}
 
 			if (!empty($dID)) {
-				settype($dID, "integer");
-				return Document::get($dID);
+				return Document::get((integer)$dID);
 			} else {
 				return false;
 			}
 		}
 
 		function getDocumentForVersion($Version) {
-			global $DB;
-
-			$Version = intval($Version);
-			$ID = intval($DB->queryValue("SELECT Document FROM DocumentVersions WHERE ID=$Version"));
+			$ID = $this->DB->queryValue("SELECT Document FROM DocumentVersions WHERE ID=?", (integer)$Version);
 
 			if (!empty($ID)) {
 				return Document::get($ID);
@@ -145,25 +141,19 @@ class ImpCMS {
 		}
 
 		function getDocumentsInContainer($Container, $ShowAll = false) {
-			global $DB;
 			// A container is simply an arbitrary way for us to group content
-						// based on some external organizational structure. In this case we
-						// simply query for documents whose Container matches the provided
-						// value
+			// based on some external organizational structure. In this case we
+			// simply query for documents whose Container matches the provided
+			// value
 
-			$Documents = array();
-			foreach ($DB->queryValues("SELECT ID FROM Documents WHERE Container=? " . ($ShowAll ? '' : 'AND Visible=1'), $Container) as $did) {
-				$Documents[] = Document::get($did);
-			}
+			return Document::get($this->DB->queryValues("SELECT ID FROM Documents WHERE Container=? " . ($ShowAll ? '' : 'AND Visible=1'), $Container));
+		}
 
-			return $Documents;
+		function getContainerChild($Container, $Name) {
+			return Document::get($this->DB->queryValue("SELECT child.ID FROM Documents child INNER JOIN Documents parent ON child.Parent = Parent.ID WHERE child.Visible = 1 AND parent.Container=? AND child.Title = ?", $Container, $Name));
 		}
 
 		function processXMLRPCRequest($xml) {
-			if (!class_exists("XMLRPCHandler")) {
-				include_once("ImpUtils/ImpCMS/XMLRPC.php");
-			}
-
 			$Handler = new XMLRPCHandler($this);
 			$Handler->processRequest($xml);
 		}

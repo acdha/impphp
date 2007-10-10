@@ -1,43 +1,13 @@
 <?php
 		/*
-			A subclass for objects which closely track database tables
-
-			Since the concept of having multiple instances representing a
-      single table is unwise, this class uses a factory approach to
-      ensure that all future instantiations of a given (class, id)
-      will return the first instance
-
-			Usage:
-					new DerivedClass() - empty object
-					new DerivedClass($ID) - object retrieved from database or false
-					new DerivedClass($Properties) - new object initialized using $Properties instead of a database query. array_keys() must match!
-
-					$objects = DerivedClass::get($IDs) - retrieve an array of objects corresponding to the passed array of IDs
-					$objects = DerviedClass::find(array('key' => 'value')) - retrieve an array of matching values
-
-			New-style serialization syntax:
-			 	- DB column names must match property names exactly
-			  - Every DBObject *must* have a single, integer ID (most likely
-			    an INTEGER AUTO_INCREMENT PRIMARY KEY column)
-			  - Properties is an array. The key is the property name; the
-					value is either a string (shorthand for the property's type) or
-					an array:
-						type      => property type (integer, string, boolean, timestamp, datetime/date, set, enum or object)
-						class     => name of a PHP class, only necessary if the class name is different than the property name
-						formfield => boolean indicating whether this property corresponds directly to a form field
-						required  => boolean indicating whether this is a required form field
-						lazy			=> boolean indicating whether this should be loaded on demand (default: true)
-
-			NOTES:
-				Subclasses must implement the get() and find() static functions because these cannot be inherited from this class. See DBObject-template.php.
-
-			TODO: Add support for form validation information
-			TODO: Remove legacy get/set*() methods
-			TODO: Finish implementing find() method
-			TODO: Cleanup property handling - we should have an iterator which converts $Properties values to arrays with the appropriate default values
-			TODO: Fix set handling to provide all possible values
-			TODO: Add proper support for collections (e.g. defining Document->Children as a property of type collection, class = Document, key = Parent=$this->ID)
-			TODO: Add lazy loading for properties which are not objects
+		 * A subclass for objects which closely track database tables
+		 *
+		 * TODO: Add support for form validation and generation
+		 * TODO: Remove legacy get/set*() methods
+		 * TODO: Add support for bind variables
+		 * TODO: Expand find() method
+		 * TODO: Cleanup property handling - we should have an iterator which converts $Properties values to arrays with the appropriate default values
+		 * TODO: Improve set/enum handling
 		 */
 
 		if (!class_exists('ImpSQLBuilder')) {
@@ -84,7 +54,7 @@
 
 					if (empty($id)) return $objs;
 
-					$ObjData = DBObject::$DB->query(call_user_func(array($class, '_generateSelect'), get_class_var($class, 'DBTable'), get_class_var($class, 'Properties'), 'ID IN (' . implode(', ', $id) . ')'));
+					$ObjData = self::$DB->query(call_user_func(array($class, '_generateSelect'), get_class_var($class, 'DBTable'), get_class_var($class, 'Properties'), 'ID IN (' . implode(', ', $id) . ')'));
 
 					foreach ($ObjData as $d) {
 						$id = $d['ID'];
@@ -133,13 +103,13 @@
 							throw new Exception("Constructor called with empty id $ID");
 						}
 
-						$Q = DBObject::$DB->query($this->_generateSelect($this->DBTable, $this->Properties, "ID=$ID"));
+						$Q = self::$DB->query($this->_generateSelect($this->DBTable, $this->Properties, "ID=$ID"));
 
 						if (count($Q) < 1) {
 							throw new Exception("Constructor called with non-existent id $ID");
 						} else {
 							assert(count($Q) == 1);
-							$this->setID($ID);
+							$this->ID = $ID;
 							$this->setProperties($Q[0]);
 							$this->_initialValues = $Q[0];
 						}
@@ -177,15 +147,19 @@
 									$this->$Name = array();
 									break;
 
+								case 'collection':
+									break;
+
 								case 'object':
-									break; // There is no meaningful default for this type
+									// TODO: this breaks __set(), presumably due to a recursive call: $this->$Name = null;
+									break;
 
 								case 'boolean':
 									$this->$Name = false;
 									break;
 
 								default:
-									throw new Exception('No default for property of type ' . $Type);
+									throw new InvalidArgumentException('No default for property of type ' . $Type);
 							}
 						}
 
@@ -195,29 +169,28 @@
 			}
 
 			public function __isset($p) {
-				if (array_key_exists($p, $this->_lazyObjects) or isset($this->$p)) {
-					return true;
-				} else {
-					return false;
-				}
+				return (array_key_exists($p, $this->_lazyObjects) or isset($this->$p));
 			}
 
 			public function __get($p) {
 				if (isset($this->_lazyObjects[$p])) {
-					$this->_lazyLoad($p);
-					return $this->$p;
+					return $this->_lazyLoad($p);
 				} elseif (isset($this->$p)) {
 					return $this->$p;
-				} elseif (isset($this->Properties[$p]) or array_key_exists($p, get_class_vars(get_class()))) {
-					return;
+				} elseif (array_key_exists($p, $this->Properties)) {
+					if (is_array($this->Properties[$p]) and $this->Properties[$p]['type'] == 'collection') {
+						return $this->_loadCollection($p);
+					} else {
+						return null;
+					}
 				} else {
-					trigger_error("Attempted to get unknown property $p!", E_USER_ERROR);
+					throw new InvalidArgumentException("Attempted to get unknown property " . get_class($this) . "->$p");
 				}
 			}
 
 			public function __set($name, $value) {
-				if (!(isset($this->$name) or array_key_exists($name, $this->Properties) or array_key_exists($name, get_class_vars(get_class())))) {
-					trigger_error("Attempted to set unknown property $name to $value!", E_USER_ERROR);
+				if (!array_key_exists($name, $this->Properties) and !array_key_exists($name, get_class_vars(get_class()))) {
+					throw new InvalidArgumentException("Attempted to set unknown property " . get_class($this) . "->$name to $value!");
 				}
 
 				switch ($name) {
@@ -237,10 +210,6 @@
 						settype($value, 'integer'); // All dates are stored as time_t values
 
 					default:
-						if (!isset($this->Properties[$name])) {
-							trigger_error(get_class($this) . "::setProperty() called for undefined property $name", E_USER_ERROR);
-						}
-
 						if (is_array($this->Properties[$name])) {
 							$PropertyType = $this->Properties[$name]['type'];
 						} else {
@@ -250,15 +219,13 @@
 						switch ($PropertyType) {
 							case 'object':
 								if (empty($value)) {
-									$this->$name = false;
+									$this->$name = null;
+								} elseif (is_object($value)) {
+									$this->$name = $value;
 								} else {
-									if (is_object($value)) {
-										$this->$name = $value;
-										break;
-									}
-
+									$value = (integer)$value;
 									$class = $name;
-									$lazy = true;
+									$lazy  = true;
 
 									if (is_array($this->Properties[$name])) {
 										if (isset($this->Properties[$name]['class'])) {
@@ -271,14 +238,17 @@
 									}
 
 									if ($lazy) {
-										$this->_lazyObjects[$name]['ID'] = intval($value);
+										$this->_lazyObjects[$name]['ID']    = $value;
 										$this->_lazyObjects[$name]['Class'] = $class;
 									} else {
-										class_exists($class) or die("Couldn't set $name: the $class class does not exist");
+										if (!class_exists($class)) throw new Exception("Couldn't set $name to $class ($value): there is no $class class");
+
 										$tmpObj = call_user_func(array($class, 'get'), $value);
+
 										if (!is_object($tmpObj) or empty($tmpObj->ID)) {
 											throw new Exception("Attempted to set $name to invalid ID $value");
 										}
+
 										$this->$name = $tmpObj;
 									}
 								}
@@ -320,6 +290,41 @@
 				}
 			}
 
+			private function _loadCollection($p) {
+				if (empty($this->ID)) return null;
+
+				assert(is_array($this->Properties[$p]));
+				assert(!empty($this->Properties[$p]['type']));
+				assert($this->Properties[$p]['type'] == 'collection');
+				assert(!isset($this->$p));
+
+				extract($this->Properties[$p]);
+
+				if (empty($class)) {
+					throw new Exception("Property definition for $p needs to specify a class name");
+				}
+
+				if (empty($table))					$table         = $p;
+				if (empty($our_column))			$our_column    = get_class($this);
+				if (empty($member_column))	$member_column = 'ID';
+				if (empty($sort_function))	$sort_function = array($class, 'defaultSortFunction');
+
+				$sql = "SELECT $member_column FROM $table WHERE $our_column=?";
+				if (!empty($constraint)) 	$sql .= " AND ($constraint)";
+				if (!empty($constraints))	$sql .= ' AND (' . implode(') AND (', $constraints) . ')';
+
+				$tmp = call_user_func(array($class, 'get'), get_class_var($class,'DB')->queryValues($sql, $this->ID));
+				assert(is_array($tmp));
+
+				if (!empty($filter)) {
+					$tmp = array_filter($tmp, $filter);
+				}
+
+				uasort($tmp, $sort_function);
+				$this->$p = $tmp;
+				return $tmp;
+			}
+
 			private function _lazyLoad($p) {
 				assert(isset($this->_lazyObjects[$p]));
 
@@ -332,6 +337,8 @@
 				$this->$p = $tmpObj;
 
 				unset($this->_lazyObjects[$p]);
+
+				return $tmpObj;
 			}
 
 			public static function loadAllLazyObjects(array $objects, $Property) {
@@ -369,7 +376,7 @@
 					}
 				}
 
-				return call_user_func(array($class, 'get'), DBObject::$DB->queryValues($SB->generateSelect()));
+				return call_user_func(array($class, 'get'), self::$DB->queryValues($SB->generateSelect()));
 			}
 
 			protected static function _generateSelect($DBTable, $Properties, $Constraints) {
@@ -380,7 +387,10 @@
 
 				foreach ($Properties as $name => $def) {
 					if (is_array($def)) {
-						assert(isset($def['type']));
+						if (!isset($def['type'])) throw new Exception("$DBTable property $name must have a defined type");
+
+						if ($def['type'] == 'collection') continue;
+
 						$SQL->addColumn($name, $def['type']);
 					} else {
 						$SQL->addColumn($name, $def);
@@ -408,6 +418,9 @@
 					}
 
 					switch ($Type) {
+						case 'collection':
+							break;
+
 						case 'timestamp':
 							$Q->addValue($P, time(), 'time'); // CHANGED: timestamps are set to time() to avoid discrepancies between PHP and database timezones
 							break;
@@ -441,7 +454,7 @@
 							// comma separated string of the keys whose value was true.
 							// This matches the way the MySQL SET column type
 							// behaves.
-							$Q->addValue($P, implode(',', array_keys(array_filter($this->$P, array(&$this, '_is_true')))), 'set');
+							$Q->addValue($P, implode(',', array_keys(array_filter($this->$P))), 'set');
 							break;
 
 						case 'enum':
@@ -463,20 +476,19 @@
 					}
 
 					$Q->addConstraint('ID=' . $this->ID);
-					DBObject::$DB->execute($Q->generateUpdate());
-
-					assert(DBObject::$DB->getAffectedRowCount() <= 1);
+					self::$DB->execute($Q->generateUpdate());
+					assert(self::$DB->getAffectedRowCount() <= 1);
 
 				} else {
-					DBObject::$DB->execute($Q->generateInsert());
-					$this->ID = DBObject::$DB->getLastInsertId();
+					self::$DB->execute($Q->generateInsert());
+					$this->ID = self::$DB->getLastInsertId();
 				}
 
 				return true;
 			}
 
 			public function setID($ID) {
-				// This function exists only for legacy code which predates the availability of __set():
+				trigger_error(get_class($this) . '->setID() is deprecated; you should use ' . get_class($this) . '->ID = $id instead', E_USER_NOTICE);
 				$this->ID = $ID;
 			}
 
@@ -487,11 +499,7 @@
 
 			public function setProperties(array $A) {
 				// Sets object properties from an associative array such as the one returned
-				// by DBObject::$DB->query()
-
-				if (empty($A)) {
-					return false;
-				}
+				// by self::$DB->query()
 
 				foreach ($A as $n => $v) {
 					$this->$n = $v;
@@ -514,11 +522,6 @@
 				return array_keys(array_filter($this->Properties, array($this, 'filterRequiredFormFields')));
 			}
 
-			private static function _is_true($v) {
-				// Convenience function for array_filter() call in $this->save();
-				return ($v);
-			}
-
 			public function enableChangeTracking($enable = true) {
 				$this->_trackChanges = $enable;
 			}
@@ -535,7 +538,9 @@
 				$Q->addValue('RecordID', $this->ID);
 				$Q->addValue('Admin', $_SERVER['PHP_AUTH_USER']);
 
-				foreach ($this->Properties as $Name => $Type) {
+				foreach ($this->Properties as $Name => $def) {
+					if (is_array($def) and $def['type'] == 'collection') continue;
+
 					$NewValue = $this->_convertValueToChangeString($this->$Name);
 					$OldValue = $this->_convertValueToChangeString($this->_initialValues[$Name]);
 
@@ -543,7 +548,7 @@
 						$Q->addValue('Property', $Name, 		'STRING');
 						$Q->addValue('OldValue', $OldValue, 'STRING');
 						$Q->addValue('NewValue', $NewValue, 'STRING');
-						DBObject::$DB->execute($Q->generateInsert());
+						self::$DB->execute($Q->generateInsert());
 					}
 				}
 			}
@@ -563,7 +568,7 @@
 					return array();
 				}
 
-				return DBObject::$DB->query("SELECT Admin, UNIX_TIMESTAMP(Time) AS Time, Property, OldValue, NewValue FROM ChangeLog WHERE TargetTable='{$this->DBTable}' AND RecordID = {$this->ID} ORDER BY Time, Property");
+				return self::$DB->query("SELECT Admin, UNIX_TIMESTAMP(Time) AS Time, Property, OldValue, NewValue FROM ChangeLog WHERE TargetTable='{$this->DBTable}' AND RecordID = {$this->ID} ORDER BY Time, Property");
 			}
 
 			public function printChanges() {
@@ -629,7 +634,7 @@
 
 			public function getUniqueIdentifier() {
 				// Returns a generic reference which uniquely identifies this particular object in a reasonably persistent fashion:
-				return DBObject::$DB->getUniqueIdentifier($this->DBTable, $this->ID);
+				return self::$DB->getUniqueIdentifier($this->DBTable, $this->ID);
 			}
 
 			public function getETag() {

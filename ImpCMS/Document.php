@@ -1,5 +1,7 @@
 <?php
 	class Document extends DBObject {
+		protected $DBTable       = 'Documents';
+		protected $_trackChanges = true;
 		protected $Properties    = array(
 			'Parent'                => array('type' => 'object', 'class' => 'Document'),
 			'Title'                 => array('type' => 'string', 'formfield' => true, 'required' => true),
@@ -14,9 +16,6 @@
 			'ResourceSortKey'       => array('type' => 'enum', 'default' => 'Title'),
 			'ResourceSortOrder'     => array('type' => 'enum', 'default' => 'Ascending')
 		);
-
-		protected $DBTable       = 'Documents';
-		protected $_trackChanges = true;
 
 		public $Children;
 		public $Versions;
@@ -69,7 +68,7 @@
 
 		function getVersions() {
 			if (!isset($this->Versions)) {
-				$this->Versions = DocumentVersion::get(Document::$DB->queryValues("SELECT ID FROM DocumentVersions WHERE Document={$this->ID} AND Deleted IS NULL ORDER BY Modified"));
+				$this->Versions = DocumentVersion::get(self::$DB->queryValues("SELECT ID FROM DocumentVersions WHERE Document={$this->ID} AND Deleted IS NULL ORDER BY Modified"));
 				uasort($this->Versions, array('DocumentVersion', 'defaultSortFunction'));
 			}
 
@@ -115,7 +114,7 @@
 				// TODO: Make sure we avoid calling getChildren() where possible
 				// TODO: Change this to use DBObject::find() once that interface is mature
 				// TODO: this needs to use the defined child sort key settings for this document
-				$this->Children = Document::get(Document::$DB->queryValues("SELECT ID FROM Documents WHERE Parent = $this->ID" . ($ShowAll ? "" : " AND Visible=1") . ($limit ? " LIMIT $limit" : "")));
+				$this->Children = Document::get(self::$DB->queryValues("SELECT ID FROM Documents WHERE Parent = $this->ID" . ($ShowAll ? "" : " AND Visible=1") . ($limit ? " LIMIT $limit" : "")));
 				uasort($this->Children, array('Document', 'defaultSortFunction'));
 			}
 
@@ -125,7 +124,7 @@
 		}
 
 		function getChildByName($Name) {
-			$cid = Document::$DB->queryValue('SELECT ID FROM Documents WHERE Parent = ? AND Title = ?', $this->ID, $Name);
+			$cid = self::$DB->queryValue('SELECT ID FROM Documents WHERE Parent = ? AND Title = ?', $this->ID, $Name);
 			if (empty($cid)) {
 				return false;
 			}
@@ -138,7 +137,7 @@
 		 * Returns a Document object for the most recently modified child
 		 */
 		function getLastModifiedChild() {
-			return Document::get(Document::$DB->queryValue("SELECT ID FROM Documents WHERE Parent = ? AND Visible = 'True' ORDER BY Modified DESC LIMIT 1", $this->ID));
+			return Document::get(self::$DB->queryValue("SELECT ID FROM Documents WHERE Parent = ? AND Visible = 'True' ORDER BY Modified DESC LIMIT 1", $this->ID));
 		}
 
 		/**
