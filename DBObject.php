@@ -313,7 +313,8 @@
 				if (!empty($constraint)) 	$sql .= " AND ($constraint)";
 				if (!empty($constraints))	$sql .= ' AND (' . implode(') AND (', $constraints) . ')';
 
-				$tmp = call_user_func(array($class, 'get'), get_class_var($class,'DB')->queryValues($sql, $this->ID));
+				// CHANGED: get_class_var() fails on get_class_var(array($class,'DB)) because ReflectionClass->getDefaultProperties() doesn't include static properties prior to 5.2.4 (http://bugs.php.net/bug.php?id=41884)
+				$tmp = call_user_func(array($class, 'get'), self::$DB->queryValues($sql, $this->ID));
 				assert(is_array($tmp));
 
 				if (!empty($filter)) {
