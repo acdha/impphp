@@ -150,7 +150,7 @@ class ImpCMS {
 		}
 
 		function getContainerChild($Container, $Name) {
-			return Document::get($this->DB->queryValue("SELECT child.ID FROM Documents child INNER JOIN Documents parent ON child.Parent = Parent.ID WHERE child.Visible = 1 AND parent.Container=? AND child.Title = ?", $Container, $Name));
+			return Document::get($this->DB->queryValue("SELECT child.ID FROM Documents child INNER JOIN Documents parent ON child.Parent = parent.ID WHERE child.Visible = 1 AND parent.Container=? AND child.Title = ?", $Container, $Name));
 		}
 
 		function processXMLRPCRequest($xml) {
