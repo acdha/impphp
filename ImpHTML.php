@@ -202,6 +202,15 @@
 			return $html;
 		}
 
+		public static function filterCheckboxes($values) {
+			if (!is_array($values)) return array();
+
+			foreach ($values as $k => $v) {
+				$values[$k] = ($v == 'on');
+			}
+
+			return $values;
+		}
 
 		public static function generateSelectFromArray(array $the_array, $select_name, $selected_value = false, $use_value_as_key = false) {
 			/*
