@@ -11,15 +11,15 @@ Basic Usage
 
 Create a new object:
 
-	$object = DerivedClass::get()
+	$object  = DerivedClass::get()
 	
 Retrieving an existing object:
 
-	$object = DerivedClass::get($ID)
+	$object  = DerivedClass::get($ID)
 	
 Creating an object without a database query by passing a data array:
 
-	$object = DerivedClass::get(array $Properties)
+	$object  = DerivedClass::get(array $Properties)
 
 Retrieving multiple objects using a single query:
 
@@ -33,24 +33,26 @@ Notes
 -----
 * DB column names must match property names exactly
 * All date/time fields must be stored as database date/time types but are
-  processed as PHP time_t values. FROM_UNIXTIME() and UNIX_TIMESTAMP() will be
+  processed as PHP `time_t` values. `FROM_UNIXTIME()` and `UNIX_TIMESTAMP()` will be
   automatically supplied.
 * Properties is an array. The key is the property name; the value is either a
   string (shorthand for the property's type) or an array:
+	* `type`: property type (integer, string, boolean, timestamp, datetime/date, set, enum or object)
+	* `class`: valid PHP class name (optional, defaults to the property name)
+	* `formfield`: boolean indicating whether this property corresponds directly to a form field
+	* `required`: boolean indicating whether this is a required form field
+	* `lazy`: boolean indicating whether this should be loaded on demand (default: true)
+* Subclasses must implement the get() and find() static functions because
+  these cannot be inherited from this class until at least PHP 5.3. See:
 
-	type      => property type (integer, string, boolean, timestamp, datetime/date, set, enum or object)
-	class     => name of a PHP class, only necessary if the class name is different than the property name
-	formfield => boolean indicating whether this property corresponds directly to a form field
-	required  => boolean indicating whether this is a required form field
-	lazy			=> boolean indicating whether this should be loaded on demand (default: true)
+  [DBObject-template.php](http://svn.improbable.org/ImpUtils/trunk/DBObject-template.php)
 
-* Subclasses must implement the get() and find() static functions because these cannot be inherited from this class until at least PHP 5.3. See DBObject-template.php.
 
 Collections
 -----------
 * Common properties:
 	* `class` (identical to a normal class value)
-	* Constraints: arguments for the query's where constraint can be supplied
+	* Constraints: arguments for the query's WHERE constraint can be supplied
     in two forms: 
 
 				"constraint"  => $string
@@ -58,18 +60,18 @@ Collections
 				
 		In either case they are ANDed to the existing WHERE constraint. Currently
     bind variables cannot be used.
-	* sorting: the result arrays will be called with uasort(). If provided
-		`sort_function` will be passed to `uasort`; the default value is
+	* Collection arrays will be called with uasort(). If provided `sort_function`
+		will be passed to `uasort`; the default value is 
 		`array($class, 'defaultSortFunction')`
+		
 * Relationships
-	* One-to-Many: the collection's members have a key which maps to this
+	* **One-to-Many**: the collection's members have a key which maps to this
 		object's ID - e.g Document->Children where each child is itself a Document
 		with a Parent column:
 
-			Property  = array(
-				'type'   => 'collection',
-				'class'  => 'Document',
-				'table'  => 'Documents', // Optional since we're going to use the DBObject constructor
+			'Children'    = array(
+				'type'       => 'collection',
+				'class'      => 'Document',
 				'our_column' => 'Parent'
 			);
 
@@ -77,7 +79,7 @@ Collections
 
 			return Document::get($DB->queryValues('SELECT ID FROM Documents WHERE Parent = ?', $this->ID));
 
-	* Many-to-Many: the collection's members are determined using a third map
+	* **Many-to-Many**: the collection's members are determined using a third map
 		table which has columns for this object's ID and the member's ID (e.g.
     Order->Products with an OrderProducts table containing Order IDs and
     Product IDs)

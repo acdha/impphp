@@ -194,9 +194,9 @@
 			$html = '';
 
 			foreach ($Options as $o) {
-				$o_val = html_encode($o);
-				$o_id = ImpHTML::makeSafeCSSName($column . $o);
-				$html .= '<input type="checkbox" id="' . $o_id .'" name="' . html_encode($column) . '[' . $o_val . ']" ' . (in_array($o, $selected_values) ? " CHECKED" : "") . '><label for="' . $o_id .'">' . $o_val . '</label><br/>';
+				$o_val  = html_encode($o);
+				$o_id   = ImpHTML::makeSafeCSSName($column . $o);
+				$html  .= '<input type="checkbox" id="' . $o_id .'" name="' . html_encode($column) . '[' . $o_val . ']" ' . (in_array($o, $selected_values) ? " CHECKED" : "") . '><label for="' . $o_id .'">' . $o_val . '</label><br/>';
 			}
 
 			return $html;
@@ -215,21 +215,15 @@
 		public static function generateSelectFromArray(array $the_array, $select_name, $selected_value = false, $use_value_as_key = false) {
 			/*
 			 * returns a string containing an HTML SELECT seeded with the contents of $the_array.
-			 * If supplied, any ID value (col 1) matching $selected_value will be SELECTED.
+			 * Any key matching $selected_value will be SELECTED
 			 */
-			$html = "";
-			$html .= "<select name=\"$select_name\">\n";
-
-			$html .= "<option value=\"\">Select...</option>\n";
+			$html = '<select name="' . html_encode($select_name) . '"><option value="">Select...</option>';
 
 			foreach ($the_array as $ID => $Value) {
-				if ($use_value_as_key) {
-					$ID = $Value;
-				}
-				$html .= "<option value=\"$ID\"" . ($ID == $selected_value ? " SELECTED" : "") . ">$Value</option>\n";
+				$html .= '<option value="' . html_encode($use_value_as_key ? $Value : $ID) . '"' . ($ID == $selected_value ? ' selected' : '') . '>' . html_encode($Value) . '</option>';
 			}
 
-			$html .=	"</select>\n";
+			$html .=	'</select>';
 			return $html;
 		}
 
@@ -252,7 +246,7 @@
 			$Minute = 0;
 			$Second = 0;
 
-			extract($Fields);
+			extract($Fields, EXTR_OVERWRITE);
 
 			return mktime($Hour, $Minute, $Second, $Month, $Day, $Year);
 		}
@@ -264,7 +258,7 @@
 			 *
 			 */
 
-			if (!$current_value) $current_value = time();
+			if (empty($current_value)) $current_value = time();
 
 			$CurYear	= date("Y", $current_value);
 			$CurMonth = date("m", $current_value);

@@ -629,10 +629,6 @@
 				print "</table>\n";
 			}
 
-			public function __toString() {
-				return $this->getUniqueIdentifier();
-			}
-
 			public function getUniqueIdentifier() {
 				// Returns a generic reference which uniquely identifies this particular object in a reasonably persistent fashion:
 				return self::$DB->getUniqueIdentifier($this->DBTable, $this->ID);

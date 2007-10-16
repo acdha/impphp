@@ -118,15 +118,14 @@
 			if (defined('IMP_FATAL_ERROR_MESSAGE')) {
 				echo '<div>', IMP_FATAL_ERROR_MESSAGE, '</div>';
 			}
-			error_log('Unhandled exception: ' . $e);
+			error_log('Unhandled ' . get_class($e) . ': ' . $e);
 			exit(1);
 		}
 
-		echo '<div class="Error Exception">Uncaught Exception: <code>';
+		echo '<div class="Error Exception">Uncaught ', get_class($e), ': ';
 		generate_debug_source_link($e->getFile(), $e->getLine(), $e->getCode());
-		echo '</code>';
 
-		echo '<p>', $e->getMessage(), '</p>';
+		echo '<pre>', $e->getMessage(), '</pre>';
 
 		generate_debug_backtrace($e->getTrace());
 
@@ -152,7 +151,6 @@
 	}
 
 	function generate_debug_backtrace($bt) {
-		print '<h1>Backtrace</h1>';
 		print '<ol class="Backtrace">';
 
 		foreach ($bt as $t) {
@@ -177,13 +175,13 @@
 	function generate_debug_source_link($file, $line, $text = false) {
 		if ($_SERVER["REMOTE_ADDR"] == "127.0.0.1") {
 			echo '<a href="txmt://open?url=file://', rawurlencode($file) , '&line=', $line,'">';
-			echo '<span title="' . html_encode($file) . '">', basename($file), '</span>:', $line;
+			echo '<code><span title="' . html_encode($file) . '">', basename($file), '</span>:', $line;
 			if (!empty($text)) {
 				echo ': ', $text;
 			}
-			echo '</a>';
+			echo '</code></a>';
 		} else {
-			echo "$file:$line: $text";
+			echo "<code>$file:$line</code>: $text";
 		}
 	}
 
