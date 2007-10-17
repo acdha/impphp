@@ -231,7 +231,24 @@
 
 	function reject($Message, $Target = false) {
 		// Similar to redirect() but with an added error message which gets logged; useful for rejecting attempts to access invalid/unavailable resources since it records some state
-		error_log("Rejected request for {$_SERVER['REQUEST_URI']}: $Message; \$_SESSION=" . (isset($_SESSION) ? unwrap(var_export($_SESSION, true)) : 'undefined') . '; $_REQUEST=' . unwrap(var_export($_REQUEST, true)) . '; $_SERVER=' . unwrap(var_export(array_filter_keys($_SERVER, array("HTTP_REFERER", 'HTTP_USER_AGENT', 'HTTP_HOST', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING')), true)));
+		$Message = "Rejected request for {$_SERVER['REQUEST_URI']}: $Message; ";
+		if (!empty($_SESSION)) {
+			$sVars = array();
+			foreach ($_SESSION as $k => $v) {
+				if (!is_object($v)) {
+					$sVars[] = "'$k' => " . var_export($v, true);
+				} else {
+					$sVars[] = "'$k' => " . get_class($v) . ' Object' . (!empty($v->ID) ? " #{$v->ID}" : '');
+				}
+			}
+			$Message .= ' $_SESSION = array (' . implode(', ', $sVars) . '); ';
+		}
+
+		$Message .= '$_' . $_SERVER['REQUEST_METHOD'] . ' = ' . unwrap(var_export($_SERVER['REQUEST_METHOD'] == 'POST' ? $_POST : $_GET, true)) . "; ";
+
+		$Message .= '$_SERVER=' . unwrap(var_export(array_filter_keys($_SERVER, array("HTTP_REFERER", 'HTTP_USER_AGENT', 'HTTP_HOST', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING')), true));
+
+		error_log($Message);
 		redirect($Target);
 	}
 
