@@ -246,7 +246,7 @@
 
 		$Message .= '$_' . $_SERVER['REQUEST_METHOD'] . ' = ' . unwrap(var_export($_SERVER['REQUEST_METHOD'] == 'POST' ? $_POST : $_GET, true)) . "; ";
 
-		$Message .= '$_SERVER=' . unwrap(var_export(array_filter_keys($_SERVER, array("HTTP_REFERER", 'HTTP_USER_AGENT', 'HTTP_HOST', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING')), true));
+		$Message .= '$_SERVER=' . unwrap(var_export(array_filter_keys($_SERVER, array('REMOTE_ADDR', 'HTTP_REFERER', 'HTTP_USER_AGENT', 'HTTP_HOST', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING')), true));
 
 		error_log($Message);
 		redirect($Target);
