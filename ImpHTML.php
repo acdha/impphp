@@ -217,10 +217,12 @@
 			 * returns a string containing an HTML SELECT seeded with the contents of $the_array.
 			 * Any key matching $selected_value will be SELECTED
 			 */
+
 			$html = '<select name="' . html_encode($select_name) . '"><option value="">Select...</option>';
 
 			foreach ($the_array as $ID => $Value) {
-				$html .= '<option value="' . html_encode($use_value_as_key ? $Value : $ID) . '"' . ($ID == $selected_value ? ' selected' : '') . '>' . html_encode($Value) . '</option>';
+				if ($use_value_as_key) $ID = $Value;
+				$html .= '<option value="' . html_encode($ID) . '"' . ($ID == $selected_value ? ' selected' : '') . '>' . html_encode($Value) . '</option>';
 			}
 
 			$html .=	'</select>';
