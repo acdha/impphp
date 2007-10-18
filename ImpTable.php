@@ -102,39 +102,41 @@
 			if (!ImpTable::$JS_Initialized) {
 				ImpTable::$JS_Initialized = true;
 ?>
-		<script src="http://yui.yahooapis.com/2.3.1/build/yahoo/yahoo-min.js" type="text/javascript"></script>
-		<script src="http://yui.yahooapis.com/2.3.1/build/yuiloader/yuiloader-beta-min.js" type="text/javascript"></script>
 		<script type="text/javascript" charset="utf-8">
-			ImpTable_Generators = new Array();
+			ImpTable_Generators	= new Array();
+			ImpTable_Renderer 	= function() { while(f = ImpTable_Generators.pop()){ f(); }; };
 
-			if (window.YAHOO && !(YAHOO.util && YAHOO.util.YUILoader)) {
-				alert("Existing YAHOO_config found; please add the YUILoader module!");
-			} else {
-				ImpTable_Loader = new YAHOO.util.YUILoader();
-				ImpTable_Loader.require('datatable', 'datasource');
-				ImpTable_Loader.insert(function() { while(f = ImpTable_Generators.pop()){ f(); } });
+			if (window.addEventListener) {
+				window.addEventListener("load", ImpTable_Renderer, false);
+			} else if (window.attachEvent) {
+				window.attachEvent("onload", ImpTable_Renderer);
+			}
+
+			if (!(window.YAHOO && YAHOO.widget && YAHOO.widget.DataTable && YAHOO.util && YAHOO.util.DataSource)) {
+				if (!window.YAHOO || !YAHOO.util || !YAHOO.util.YUILoader) {
+					YAHOO_config = { load: { require: [ 'datatable', 'datasource' ] }, onLoadComplete:ImpTable_Renderer };
+					document.write(unescape('%3Cscript%20src%3D%22http%3A%2F%2Fyui.yahooapis.com%2F2.3.1%2Fbuild%2Fyuiloader%2Fyuiloader-beta-min.js%22%20type%3D%22text%2Fjavascript%22%3E%3C%2Fscript%3E'));
+				} else {
+					ImpTable_Loader = new YAHOO.util.YUILoader();
+					ImpTable_Loader.require('datatable', 'datasource');
+					ImpTable_Loader.insert(ImpTable_Renderer);
+				}
 			}
 		</script>
-<?
-		}
+<? 
+		} 
 
-		echo '<div ';
-		foreach ($this->Attributes as $k => $v) {
-			echo $k, '="', htmlspecialchars($v), '" ';
-		}
-		echo '></div>';
-
+		echo '<div ', ImpHTML::attributeImplode($this->Attributes), '></div>';
 ?>
 
 		<script type="text/javascript">
-			function generate_<?=$JSName?>() {
+			ImpTable_Generators.push(function () {
 				var <?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
 				<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
 				<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };
 				<?=$JSName?>_DataTable = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=json_encode($this->getYUIColumnDefinitions())?>, <?=$JSName?>_DataSource, <?=json_encode($this->getYUIDataTableOptions())?>);
-			}
+			});
 
-			ImpTable_Generators.push(generate_<?=$JSName?>);
 		</script>
 <?
 		}
