@@ -432,7 +432,7 @@
 								// We automatically set the Created column if it's unset:
 								$Q->addValue($P, time(), 'time');
 							} else {
-								$Q->addValue($P, intval($this->$P), 'time');
+								$Q->addValue($P, (integer)$this->$P, 'time');
 							}
 							break;
 
@@ -463,7 +463,11 @@
 							break;
 
 						case 'integer':
-							$Q->addValue($P, intval($this->$P));
+							$Q->addValue($P, (integer)$this->$P);
+							break;
+
+						case 'currency':
+							$Q->addValue($P, (double)$this->$P);
 							break;
 
 						default:

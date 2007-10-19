@@ -1,59 +1,47 @@
 <?php
 	/*
-			ImpCMS - Improbable Content Management
+		ImpCMS - Improbable Content Management
 
-			Copyright 2002, Chris Adams <chris@improbable.org>
+		Copyright 2002, Chris Adams <chris@improbable.org>
 
-			THANKS:
-				Matt, Jim and Kevin for putting up with my [many]
-				mistakes and providing so much useful feedback over the
-				years
+		THANKS:
+			Matt, Jim and Kevin for putting up with my [many]
+			mistakes and providing so much useful feedback over the
+			years
 
-				The PHP, Apache, MySQL developers for producing such a
-				comfortable working environment
+			The PHP, Apache, MySQL developers for producing such a
+			comfortable working environment
 
-				Marc Liyanage for providing OS X PHP packages and saving
-				me the time I would otherwise have squandered building
-				php --with-kitchen-sink
+			Marc Liyanage for providing OS X PHP packages and saving
+			me the time I would otherwise have squandered building
+			php --with-kitchen-sink
 
-			$Id$
-			$ProjectHeader: ImpCMS 0.3 Fri, 05 Apr 2002 23:34:31 -0800 chris $
+		@author	 Chris Adams <chris@improbable.org>
+		@package ImpCMS
+		@access	 public
 	*/
 
-	require_once("ImpUtils/Utilities.php");
-	require_once("ImpUtils/DB_MySQL.php");
-	require_once("ImpUtils/DBObject.php");
-	require_once("ImpUtils/ImpSQLBuilder.php");
-	require_once('ImpUtils/ImpSingleton.php');
+require_once("ImpUtils/Utilities.php");
+require_once("ImpUtils/DB_MySQL.php");
+require_once("ImpUtils/DBObject.php");
+require_once("ImpUtils/ImpSQLBuilder.php");
+require_once('ImpUtils/ImpSingleton.php');
 
-	require_once("ImpUtils/ImpCMS/Document.php");
-	require_once("ImpUtils/ImpCMS/DocumentVersion.php");
-	require_once("ImpUtils/ImpCMS/EventDispatcher.php");
-	require_once("ImpUtils/ImpCMS/PermissionManager.php");
+require_once("ImpUtils/ImpCMS/Document.php");
+require_once("ImpUtils/ImpCMS/DocumentVersion.php");
+require_once("ImpUtils/ImpCMS/EventDispatcher.php");
+require_once("ImpUtils/ImpCMS/PermissionManager.php");
 
-	// Site-specific configuration and generally the only file the user needs to edit
-	require_once("impcms-config.php");
-
-/*
-* The main ImpCMS class
-*
-* This class handles site-configuration, database connections, access levels
-* and provides methods to create all other CMS objects.
-*
-* @author	 Chris Adams <chris@improbable.org>
-* @version	$Id$
-* @package	ImpCMS
-* @access	 public
-*
-*/
+// Site-specific configuration and generally the only file the user needs to edit
+require_once("impcms-config.php");
 
 class ImpCMS {
 		protected $AdminAccess = false;
  		protected $ShowInvisibleDocuments;
 		protected $ReadOnly;
-		protected $DB; // MySQL database object
+		protected $DB;
 
-		public function __construct(ImpDBO $DB = null) { // FIXME: PDO prototype
+		public function __construct(ImpDBO $DB = null) { // TODO: PDO prototype
 			$this->ShowInvisibleDocuments = $this->AdminAccess;
 			$this->ReadOnly               = $this->AdminAccess;
 
@@ -64,12 +52,11 @@ class ImpCMS {
 				assert(defined("IMPCMS_DB_USER_PASSWORD"));
 				$this->DB = new PDO('mysql:host=' . IMPCMS_DB_SERVER . ';dbname=' . IMPCMS_DB_NAME, IMPCMS_DB_NAME, IMPCMS_DB_USER, IMPCMS_DB_USER_PASSWORD);
 			} else {
-				//TODO: assert($DB instanceof ImpDBO);
-				$this->DB =& $DB;
+				$this->DB = $DB;
 			}
 
 			$this->EventDispatcher = new UserEventDispatcher($this);
-			$this->Permissions = new UserPermissionManager($this);
+			$this->Permissions     = new UserPermissionManager($this);
 		}
 
 		function enableAdminAccess($Username, $Password) {
