@@ -20,13 +20,13 @@
 
 
 	class ImpTable {
-		var $Data              = array();
-		var $Attributes        = array("class" => "ImpTable");
-		var $DefaultSortOrder  = "Ascending";
-		var $DefaultSortKey;
+		public $Data                     = array();
+		public $Attributes               = array('class' => 'ImpTable');
+		public $DefaultSortOrder         = 'Ascending';
+		public $DefaultSortKey;
+		public $JSRenderQueue            = 'ImpTable_Generators'; // This is the name of the JavaScript array which we will add the renderer for the table to
 		private $_SortKey;
 		private $_SortOrder;
-
 		protected static $JS_Initialized = false;
 
 		function ImpTable(array $Data = array()) {
@@ -123,14 +123,13 @@
 				}
 			}
 		</script>
-<? 
-		} 
+<?
+		}
 
 		echo '<div ', ImpHTML::attributeImplode($this->Attributes), '></div>';
 ?>
-
 		<script type="text/javascript">
-			ImpTable_Generators.push(function () {
+			<?=$this->JSRenderQueue?>.push(function () {
 				var <?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
 				<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
 				<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };

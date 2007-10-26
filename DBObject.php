@@ -8,6 +8,7 @@
 		 * TODO: Expand find() method
 		 * TODO: Cleanup property handling - we should have an iterator which converts $Properties values to arrays with the appropriate default values
 		 * TODO: Improve set/enum handling
+		 * TODO: Cleanup currency type handling
 		 */
 
 		if (!class_exists('ImpSQLBuilder')) {

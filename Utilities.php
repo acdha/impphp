@@ -488,6 +488,7 @@
 		return $arr[$k];
 	}
 
+  // TODO: Determine whether these are still necessary with PHP 5.2+
 	function array_first($arr) {
 		// Returns the first element of an array - this is can be used in cases where reset() cannot be called directly without using a temporary variable (e.g. reset(array_keys($foo)))
 		return reset($arr);

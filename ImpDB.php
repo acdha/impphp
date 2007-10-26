@@ -150,6 +150,7 @@
 			$className = get_class($this);
 
 			$QueryTable = new ImpTable($d);
+			$QueryTable->JSRenderQueue = $className . '_Table_Generators';
 
 			$QueryTable->DefaultSortKey   = 'Time';
 			$QueryTable->DefaultSortOrder = 'Descending';
@@ -164,48 +165,52 @@
 				'Cost'	=> array('text' => 'Cost', 						'formatter' => 'YAHOO.widget.DataTable.formatNumber')
 			);
 			?>
-					<style>
-						#<?=$className?>_Queries {
-							text-align: left;
-							padding: 2pt;
-							background-color: white;
-							color: black;
-						}
+			<script type="text/javascript" charset="utf-8">
+				<?=$QueryTable->JSRenderQueue?> = new Array();
+			</script>
+			<a href="#" style="display: block; text-align: center; margin-left: auto; margin-right: auto; padding: 1em; border: solid red 2pt;" onclick="this.style.display='none'; while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
+			<style>
+				#<?=$className?>_Queries {
+					text-align: left;
+					padding: 2pt;
+					background-color: white;
+					color: black;
+				}
 
-						#<?=$className?>_Queries caption {
-							font-weight: bold;
-							text-align: center;
-							background-color: #666699;
-							margin: 0;
-						}
+				#<?=$className?>_Queries caption {
+					font-weight: bold;
+					text-align: center;
+					background-color: #666699;
+					margin: 0;
+				}
 
-						#<?=$className?>_Queries thead {
-							background-color: lightgray;
-						}
+				#<?=$className?>_Queries thead {
+					background-color: lightgray;
+				}
 
-						#<?=$className?>_Queries a {
-							color: inherit ! important;
-							font-weight: inherit ! important;
-						}
+				#<?=$className?>_Queries a {
+					color: inherit ! important;
+					font-weight: inherit ! important;
+				}
 
-						#<?=$className?>_Queries th {
-							padding: 2pt;
-							padding-right: 1em;
-							font-weight: bold;
-							white-space: nowrap;
-							border: none;
-						}
+				#<?=$className?>_Queries th {
+					padding: 2pt;
+					padding-right: 1em;
+					font-weight: bold;
+					white-space: nowrap;
+					border: none;
+				}
 
-						#<?=$className?>_Queries td {
-							font-family: monospace;
-							font-size: 9px;
-							border: none;
-						}
+				#<?=$className?>_Queries td {
+					font-family: monospace;
+					font-size: 9px;
+					border: none;
+				}
 
-						#<?=$className?>_Queries tr:nth-child(odd) {
-							background-color: lightgreen;
-						}
-					</style>
+				#<?=$className?>_Queries tr:nth-child(odd) {
+					background-color: lightgreen;
+				}
+			</style>
 			<?
 				$QueryTable->generate();
 		}
