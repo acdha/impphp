@@ -218,7 +218,7 @@
 			$this->assertEquals($tmp->Enabled, true);
 			$this->assertEquals($tmp->StartDate, 53);
 
-			$tmp->setID(8);
+			@$tmp->setID(8);
 			$this->assertEquals($tmp->ID, 8);
 		}
 
