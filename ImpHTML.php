@@ -196,7 +196,19 @@
 			foreach ($Options as $o) {
 				$o_val  = html_encode($o);
 				$o_id   = ImpHTML::makeSafeCSSName($column . $o);
-				$html  .= '<input type="checkbox" id="' . $o_id .'" name="' . html_encode($column) . '[' . $o_val . ']" ' . (in_array($o, $selected_values) ? " CHECKED" : "") . '><label for="' . $o_id .'">' . $o_val . '</label><br/>';
+				$html  .= '<input type="checkbox" id="' . $o_id .'" name="' . html_encode($column) . '[' . $o_val . ']" ' . (in_array($o, $selected_values) ? " checked" : "") . '><label for="' . $o_id .'">' . $o_val . '</label><br/>';
+			}
+
+			return $html;
+		}
+
+		public static function generateCheckboxesForArray($name, $Options, array $selected_values = array()) {
+			$html = '';
+
+			foreach ($Options as $k => $v) {
+				$o_v  = html_encode($v);
+				$o_k  = ImpHTML::makeSafeCSSName("$name $k");
+				$html .= '<input type="checkbox" id="' . $o_k .'" name="' . html_encode($name) . '[' . html_encode($k) . ']" ' . (!empty($selected_values[$k]) ? " checked" : "") . '><label for="' . $o_k .'">' . $o_v . '</label><br/>';
 			}
 
 			return $html;
