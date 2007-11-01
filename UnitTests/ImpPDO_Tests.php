@@ -53,6 +53,30 @@
 			$this->db->execute("INSERT INTO Test (Name) VALUES ('Who am I?')");
 			$this->assertEquals(5, $this->db->getLastInsertId());
 		}
+
+		function testRowCounts() {
+			$this->getDB();
+			$this->db->execute("INSERT INTO Test (Name) VALUES ('Who am I?')");
+			$lid = $this->db->getLastInsertId();
+
+			$this->db->execute("DELETE FROM Test WHERE ID=999999");
+			$this->assertEquals($this->db->getAffectedRowCount(), 0);
+			$this->db->execute("DELETE FROM Test WHERE ID=?", 99999);
+			$this->assertEquals($this->db->getAffectedRowCount(), 0);
+
+			$this->assertEquals($this->db->exec("DELETE FROM Test WHERE ID=$lid"), 1);
+
+			$this->db->execute("INSERT INTO Test (Name) VALUES ('Who am I?')");
+			$lid = $this->db->getLastInsertId();
+			$this->db->execute("DELETE FROM Test WHERE ID=?", $lid);
+			$this->assertEquals($this->db->getAffectedRowCount(), 1);
+
+			$this->db->execute("INSERT INTO Test (Name) VALUES ('Who am I?')");
+			$lid = $this->db->getLastInsertId();
+			$this->db->execute("DELETE FROM Test WHERE ID=$lid");
+			$this->assertEquals($this->db->getAffectedRowCount(), 1);
+		}
+
 		function testGetPerformanceCounters() {
 			$this->getDB();
 			$this->assertType('array', $this->db->getPerformanceCounters());

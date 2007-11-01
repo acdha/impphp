@@ -151,7 +151,8 @@
 				if (!$st) {
 					throw new Exception("Unable to prepare '$sql': " . kimplode($this->PDO->errorInfo()));
 				}
-				$this->lastRowCount = $st->execute($args);
+				$st->execute($args);
+				$this->lastRowCount = $st->rowCount();
 			}
 
 			$this->stopTimer($sql);
