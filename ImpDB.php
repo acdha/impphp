@@ -168,13 +168,14 @@
 			<script type="text/javascript" charset="utf-8">
 				<?=$QueryTable->JSRenderQueue?> = new Array();
 			</script>
-			<a href="#" style="position: absolute; bottom: 0; text-align: center; width: 100%; padding: 1em 0; background-color: lightgrey; color: black;" onclick="this.style.display='none'; while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
+			<a href="#" style="position: fixed; bottom: 0; text-align: center; width: 100%; padding: 1em 0; background-color: lightgrey; color: black;" onclick="this.style.display='none'; while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
 			<style>
 				#<?=$className?>_Queries {
 					text-align: left;
 					padding: 2pt;
 					background-color: white;
 					color: black;
+					margin-top: 4em;
 				}
 
 				#<?=$className?>_Queries caption {
