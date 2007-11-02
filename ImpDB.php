@@ -168,7 +168,7 @@
 			<script type="text/javascript" charset="utf-8">
 				<?=$QueryTable->JSRenderQueue?> = new Array();
 			</script>
-			<a href="#" style="display: block; text-align: center; margin-left: auto; margin-right: auto; padding: 1em; border: solid red 2pt;" onclick="this.style.display='none'; while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
+			<a href="#" style="position: absolute; bottom: 0; text-align: center; width: 100%; padding: 1em 0; background-color: lightgrey; color: black;" onclick="this.style.display='none'; while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
 			<style>
 				#<?=$className?>_Queries {
 					text-align: left;
