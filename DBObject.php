@@ -589,12 +589,14 @@
 
 				// TODO: Add filtering here or consider switching to ImpTable with paged data so we can avoid having a huge changelog on the default view in an admin page
 				$Changes = array_reverse($Changes);
+				$CSS_ID = ImpHTML::makeSafeCSSName($this->getUniqueIdentifier());
 
-				print '<table class="DBObjectChanges">';
+				echo '<table class="DBObjectChanges" id="', $CSS_ID, '">';
 				print '<caption>';
 				print '<a name="' . html_encode("{$this->DBTable}_{$this->ID}_Changes") . '"></a>';
 				print !empty($this->Name) ? html_encode($this->Name) : "{$this->DBTable} #{$this->ID}";
 				print  ' History</caption>';
+				echo '<tr><td colspan="5"><a href="#" onclick="return toggleChangeLog_', $CSS_ID, '()" class="DBObjectChangesToggle">Hide Change Log</a></td></tr>';
 				print '<tr><th>Time</th><th>User</th><th>Property</th><th>Old Value</th><th>New Value</th></tr>';
 
 				$LastGroup = false;
@@ -632,6 +634,27 @@
 				}
 
 				print "</table>\n";
+				?>
+					<script type="text/javascript" charset="utf-8">
+						function toggleChangeLog_<?=$CSS_ID?>() {
+							var changelog = document.getElementById("<?=$CSS_ID?>");
+							var toggle = document.getElementById("<?=$CSS_ID?>_toggle");
+
+							if (changelog.style.display == 'none') {
+								changelog.style.display = 'table';
+								toggle.innerHTML        = 'Hide Change Log';
+							} else {
+								changelog.style.display = 'none';
+								toggle.innerHTML        = 'Show Change Log';
+							}
+
+							return false;
+						}
+
+						document.write('<a href="#" onclick="return toggleChangeLog_<?=$CSS_ID?>()" id="<?=$CSS_ID?>_toggle" class="DBObjectChangesToggle">Show Change Log</a>');
+						toggleChangeLog_<?=$CSS_ID?>();
+					</script>
+				<?
 			}
 
 			public function getUniqueIdentifier() {
