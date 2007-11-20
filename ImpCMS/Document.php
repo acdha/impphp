@@ -91,13 +91,13 @@
 			$V = is_object($Version) ? $Version : $this->getVersion($Version);
 
 			assert($V->Document->ID == $this->ID);
-			assert($V->Deleted == 0);
+			if (!empty($V->Deleted)) return;
 
 			$V->Deleted = time();
 			$V->save();
 
 			if (!empty($this->DisplayVersion) and ($this->DisplayVersion->ID == $V->ID)) {
-				$this->setDisplayVersion(false);
+				unset($this->setDisplayVersion);
 				$this->save();
 			}
 		}
