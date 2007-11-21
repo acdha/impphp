@@ -154,15 +154,16 @@
 
 			$QueryTable->DefaultSortKey   = 'Time';
 			$QueryTable->DefaultSortOrder = 'Descending';
+			$QueryTable->AutoSort();
 
 			$QueryTable->Attributes['id'] = $className . '_Queries';
 			$QueryTable->Caption          = $className . ': ' . number_format($TotalQueries) . ' queries in ' . number_format($this->cummulativeQueryTime, 3) . ' seconds';
 
 			$QueryTable->ColumnHeaders    = array(
-				'Query' => array('text' => 'SQL Statement'),
-				'Count' => array('text' => 'Count', 					'formatter' => 'YAHOO.widget.DataTable.formatNumber'),
-				'Time'	=> array('text' => 'Time (&micro;s)', 'formatter' => 'YAHOO.widget.DataTable.formatNumber'),
-				'Cost'	=> array('text' => 'Cost', 						'formatter' => 'YAHOO.widget.DataTable.formatNumber')
+				'Query' => array('label' => 'SQL Statement'),
+				'Count' => array('label' => 'Count',           'formatter' => 'YAHOO.widget.DataTable.formatNumber'),
+				'Time'  => array('label' => 'Time (&micro;s)', 'formatter' => 'YAHOO.widget.DataTable.formatNumber'),
+				'Cost'  => array('label' => 'Cost',            'formatter' => 'YAHOO.widget.DataTable.formatNumber')
 			);
 			?>
 			<script type="text/javascript" charset="utf-8">
