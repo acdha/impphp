@@ -88,8 +88,6 @@
 				$this->makeDataYUISafe();
 			}
 
-			$this->AutoSort();
-
 			if (empty($this->Attributes['id'])) {
 				$this->Attributes['id'] = uniqid('ImpTable_');
 			}
