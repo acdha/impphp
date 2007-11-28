@@ -205,7 +205,7 @@
 		// RFC 2616 requires absolute URLs so we need to convert relative references
 		// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.30
 
-		$HTTP_HOST = $_SERVER['HTTP_HOST'];
+		$HTTP_HOST = empty($_SERVER['HTTP_HOST']) ? $_SERVER['SERVER_NAME'] : $_SERVER['HTTP_HOST'];
 		$PROTOCOL	 = empty($_SERVER['HTTPS']) ? "http" : "https";
 
 		if (empty($URI)) {
