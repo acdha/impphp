@@ -157,6 +157,7 @@
 			$QueryTable->AutoSort();
 
 			$QueryTable->Attributes['id'] = $className . '_Queries';
+			$QueryTable->Attributes['class'] = 'ImpUtils Debug';
 			$QueryTable->Caption          = $className . ': ' . number_format($TotalQueries) . ' queries in ' . number_format($this->cummulativeQueryTime, 3) . ' seconds';
 
 			$QueryTable->ColumnHeaders    = array(
@@ -169,7 +170,7 @@
 			<script type="text/javascript" charset="utf-8">
 				<?=$QueryTable->JSRenderQueue?> = new Array();
 			</script>
-			<a href="#" style="position: fixed; bottom: 0; text-align: center; width: 100%; padding: 1em 0; background-color: lightgrey; color: black;" onclick="this.style.display='none'; while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
+			<a href="#" class="<?=$QueryTable->Attributes['class']?>" style="position: fixed; bottom: 0; text-align: center; width: 100%; padding: 1em 0; background-color: lightgrey; color: black;" onclick="this.style.display='none'; while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
 			<style>
 				#<?=$className?>_Queries {
 					text-align: left;

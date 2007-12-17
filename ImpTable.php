@@ -18,7 +18,6 @@
 
 	*/
 
-
 	class ImpTable {
 		public $Data                     = array();
 		public $Attributes               = array('class' => 'ImpTable');
@@ -101,24 +100,19 @@
 				ImpTable::$JS_Initialized = true;
 ?>
 		<script type="text/javascript" charset="utf-8">
+			if (!window.YAHOO || !YAHOO.util || !YAHOO.util.YUILoader) {
+				document.write(unescape('%3Cscript%20src%3D%22http%3A%2F%2Fyui.yahooapis.com%2F2.4.0%2Fbuild%2Fyuiloader%2Fyuiloader-beta-min.js%22%20type%3D%22text%2Fjavascript%22%3E%3C%2Fscript%3E'));
+			}
+		</script>
+
+		<script type="text/javascript" charset="utf-8">
 			ImpTable_Generators	= new Array();
 			ImpTable_Renderer 	= function() { while(f = ImpTable_Generators.pop()){ f(); }; };
 
-			if (window.addEventListener) {
-				window.addEventListener("load", ImpTable_Renderer, false);
-			} else if (window.attachEvent) {
-				window.attachEvent("onload", ImpTable_Renderer);
-			}
-
 			if (!(window.YAHOO && YAHOO.widget && YAHOO.widget.DataTable && YAHOO.util && YAHOO.util.DataSource)) {
-				if (!window.YAHOO || !YAHOO.util || !YAHOO.util.YUILoader) {
-					YAHOO_config = { load: { require: [ 'datatable', 'datasource' ] }, onLoadComplete:ImpTable_Renderer };
-					document.write(unescape('%3Cscript%20src%3D%22http%3A%2F%2Fyui.yahooapis.com%2F2.3.1%2Fbuild%2Fyuiloader%2Fyuiloader-beta-min.js%22%20type%3D%22text%2Fjavascript%22%3E%3C%2Fscript%3E'));
-				} else {
-					ImpTable_Loader = new YAHOO.util.YUILoader();
-					ImpTable_Loader.require('datatable', 'datasource');
-					ImpTable_Loader.insert(ImpTable_Renderer);
-				}
+				ImpTable_Loader = new YAHOO.util.YUILoader();
+				ImpTable_Loader.require('datatable', 'datasource');
+				ImpTable_Loader.insert({onSuccess:ImpTable_Renderer});
 			}
 		</script>
 <?
@@ -128,10 +122,10 @@
 ?>
 		<script type="text/javascript">
 			<?=$this->JSRenderQueue?>.push(function () {
-				var <?=$JSName?>_DataSource = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
-				<?=$JSName?>_DataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
+				var <?=$JSName?>_DataSource            = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
+				<?=$JSName?>_DataSource.responseType   = YAHOO.util.DataSource.TYPE_JSARRAY;
 				<?=$JSName?>_DataSource.responseSchema = { fields: ["<?=implode(array_keys($Headers), '","')?>"] };
-				<?=$JSName?>_DataTable = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=json_encode($this->getYUIColumnDefinitions())?>, <?=$JSName?>_DataSource, <?=json_encode($this->getYUIDataTableOptions())?>);
+				<?=$JSName?>_DataTable                 = new YAHOO.widget.DataTable(document.getElementById('<?=$JSName?>'), <?=json_encode($this->getYUIColumnDefinitions())?>, <?=$JSName?>_DataSource, <?=json_encode($this->getYUIDataTableOptions())?>);
 			});
 
 		</script>
