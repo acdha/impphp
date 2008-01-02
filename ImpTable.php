@@ -101,7 +101,7 @@
 ?>
 		<script type="text/javascript" charset="utf-8">
 			if (!window.YAHOO || !YAHOO.util || !YAHOO.util.YUILoader) {
-				document.write(unescape('%3Cscript%20src%3D%22http%3A%2F%2Fyui.yahooapis.com%2F2.4.0%2Fbuild%2Fyuiloader%2Fyuiloader-beta-min.js%22%20type%3D%22text%2Fjavascript%22%3E%3C%2Fscript%3E'));
+				document.write(unescape('%3Cscript%20src%3D%22http%3A%2F%2Fyui.yahooapis.com%2F2.4.1%2Fbuild%2Fyuiloader%2Fyuiloader-beta-min.js%22%20type%3D%22text%2Fjavascript%22%3E%3C%2Fscript%3E'));
 			}
 		</script>
 
