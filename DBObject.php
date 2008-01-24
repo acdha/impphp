@@ -67,7 +67,7 @@
 						$objs[$id] = self::$_instances[$class][$id];
 					}
 
-					usort($objs, array($class, 'defaultSortFunction'));
+					uasort($objs, array($class, 'defaultSortFunction'));
 
 					return $objs;
 				} else {
