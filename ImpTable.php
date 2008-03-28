@@ -107,7 +107,7 @@
 
 			$this->generateDataSource();
 ?>
-			<script type="text/javascript">
+			<script type="text/javascript">//<![CDATA[
 				<?=$this->JSRenderQueue?>.push(function () {
 					<?=$this->JSName?>_DataTable = new YAHOO.widget.DataTable(
 						document.getElementById('<?=$this->JSName?>'), 
@@ -116,6 +116,7 @@
 						<?=json_encode($this->getYUIDataTableOptions())?>
 					);
 				});
+			//]]>
 			</script>
 <?
 			flush();
@@ -164,12 +165,13 @@
 			}			
 			
 		?>
-			<script type="text/javascript">
+			<script type="text/javascript">//<![CDATA[
 				<?=$this->JSRenderQueue?>.push(function () {
 					<?=$this->JSDataSourceName?> = new YAHOO.util.DataSource(<?=json_encode($this->Data)?>);
 					<?=$this->JSDataSourceName?>.responseType   = YAHOO.util.DataSource.TYPE_JSARRAY;
 					<?=$this->JSDataSourceName?>.responseSchema = { fields: ["<?=implode(array_keys($this->ColumnHeaders), '","')?>"] };
 				});
+			//]]>
 			</script>
 		<?php	
 		}
@@ -189,12 +191,13 @@
 			$ds = $this->_dataSource;
 			if (strpos('?', $ds) === FALSE) $ds .= '?'; // We'll avoid messing with existing query strings but help the user out if they forgot to begin one
 		?>
-			<script type="text/javascript">
+			<script type="text/javascript">//<![CDATA[
 				<?=$this->JSRenderQueue?>.push(function () {
 					<?=$this->JSDataSourceName?> = new YAHOO.util.DataSource(<?=json_encode($ds)?>);
 					<?=$this->JSDataSourceName?>.responseType   = YAHOO.util.DataSource.<?=$dsType?>;
 					<?=$this->JSDataSourceName?>.responseSchema = <?=json_encode($this->_dataSourceOptions)?>;
 				});
+			//]]>
 			</script>
 		<?php	
 		}
@@ -245,13 +248,14 @@
 		public function initializeJavaScriptEnvironment() {
 			ImpTable::$JS_Initialized = true;
 			?>
-				<script type="text/javascript" charset="utf-8">
+				<script type="text/javascript" charset="utf-8">//<![CDATA[
 					if (!window.YAHOO || !YAHOO.util || !YAHOO.util.YUILoader) {
 						document.write(unescape('%3Cscript%20type%3D%22text%2Fjavascript%22%20src%3D%22http%3A%2F%2Fyui.yahooapis.com%2F2.5.1%2Fbuild%2Fyuiloader%2Fyuiloader-beta-min.js%22%3E%3C%2Fscript%3E'));
 					}
+				//]]>
 				</script>
 
-				<script type="text/javascript" charset="utf-8">
+				<script type="text/javascript" charset="utf-8">//<![CDATA[
 					<?=$this->JSRenderQueue?>	= new Array();
 					ImpTable_Renderer = function() { while(f = <?=$this->JSRenderQueue?>.shift()){ f(); }; };
 
@@ -265,6 +269,7 @@
 					} else {
 						YAHOO.util.Event.onDOMReady(ImpTable_Renderer);
 					}
+				//]]>
 				</script>
 			<?
 				flush();
