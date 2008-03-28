@@ -100,7 +100,12 @@
 			$this->JSName = $this->Attributes['id'];
 			assert(preg_match('/^\w+$/', $this->JSName)); // The list of safe CSS and JavaScript names is extremely similar so we leave it up to the developer to pick a valid name
 
-			echo '<div ', ImpHTML::attributeImplode($this->Attributes), '></div>';
+			$attrs = array();
+			foreach ($this->Attributes as $k => $v) {
+				$attrs[] = "$k=\"$v\"";
+			}
+
+			echo '<div ', implode(" ", $attrs), '></div>';
 
 			$this->generateDataSource();
 ?>
