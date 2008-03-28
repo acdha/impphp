@@ -1,6 +1,6 @@
 <?php
 	/*
-		Simple HTML table generation - this currently is implemented using YUI DataTable.
+		Simple HTML table generation using YUI DataTable
 
 		Basic Usage:
 			$IT = new ImpTable($data_array);
@@ -16,9 +16,7 @@
 				'aColumn' => array('text' => 'Column Name', 'type'=> 'number', 'sortable' => true, 'formatter' => 'myCustomYUIFormatter'),
 			);
 
-		Using External Data:
-		
-
+		See http://improbable.org/chris/Software/ImpUtils/ImpTable/ for more information.
 
 	*/
 
