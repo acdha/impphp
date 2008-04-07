@@ -488,13 +488,14 @@
 		return $arr[$k];
 	}
 
-  // TODO: Determine whether these are still necessary with PHP 5.2+
+	// These are functionally equivalent to the behaviour of reset() and end but
+	// work in cases where end() cannot be called directly without using a
+	// temporary variable (e.g. end(array_keys($foo))). This behaviour used to be
+	// allowed but is invalid as of 5.2.5 and doesn't appear likely to change.		
 	function array_first($arr) {
-		// Returns the first element of an array - this is can be used in cases where reset() cannot be called directly without using a temporary variable (e.g. reset(array_keys($foo)))
 		return reset($arr);
 	}
 	function array_last($arr) {
-		// Returns the last element of an array - this is can be used in cases where end() cannot be called directly without using a temporary variable (e.g. end(array_keys($foo)))
 		return end($arr);
 	}
 

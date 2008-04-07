@@ -116,7 +116,7 @@
 		function queryValue($sql) {
 			$args = func_get_args();
 			$rs = call_user_func_array(array($this, 'query'), $args);
-			return $rs ? reset(reset($rs)) : false;
+			return $rs ? array_first(array_first($rs)) : false;
 		}
 
 		function queryValues($sql) {
