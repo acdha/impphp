@@ -147,20 +147,20 @@
 
 			assert($TotalQueries == $this->queryCount);
 
-			$className = get_class($this);
+			$className                       = get_class($this);
 
-			$QueryTable = new ImpTable($d);
-			$QueryTable->JSRenderQueue = $className . '_Table_Generators';
+			$QueryTable                      = new ImpTable($d);
+			$QueryTable->JSRenderQueue       = $className . '_Table_Generators';
 
-			$QueryTable->DefaultSortKey   = 'Time';
-			$QueryTable->DefaultSortOrder = 'Descending';
+			$QueryTable->DefaultSortKey      = 'Time';
+			$QueryTable->DefaultSortOrder    = 'Descending';
 			$QueryTable->AutoSort();
 
-			$QueryTable->Attributes['id'] = $className . '_Queries';
+			$QueryTable->Attributes['id']    = $className . '_Queries';
 			$QueryTable->Attributes['class'] = 'ImpUtils Debug';
-			$QueryTable->Caption          = $className . ': ' . number_format($TotalQueries) . ' queries in ' . number_format($this->cummulativeQueryTime, 3) . ' seconds';
+			$QueryTable->Caption             = $className . ': ' . number_format($TotalQueries) . ' queries in ' . number_format($this->cummulativeQueryTime, 3) . ' seconds';
 
-			$QueryTable->ColumnHeaders    = array(
+			$QueryTable->ColumnHeaders       = array(
 				'Query' => array('label' => 'SQL Statement'),
 				'Count' => array('label' => 'Count',           'formatter' => 'YAHOO.widget.DataTable.formatNumber'),
 				'Time'  => array('label' => 'Time (&micro;s)', 'formatter' => 'YAHOO.widget.DataTable.formatNumber'),
@@ -170,7 +170,7 @@
 			<script type="text/javascript" charset="utf-8">
 				<?=$QueryTable->JSRenderQueue?> = new Array();
 			</script>
-			<a href="#" class="<?=$QueryTable->Attributes['class']?>" style="position: fixed; bottom: 0; text-align: center; width: 100%; padding: 1em 0; background-color: lightgrey; color: black;" onclick="this.style.display='none'; while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
+			<a href="#" class="<?=$QueryTable->Attributes['class']?>" style="position: fixed; bottom: 0; text-align: center; width: 100%; padding: 1em 0; background-color: lightgrey; color: black;" onclick="this.style.display='none';document.getElementById('<?=$className?>_Queries').style.display='block';while(f = <?=$QueryTable->JSRenderQueue?>.pop()){ f(); }; return false"><?=$QueryTable->Caption?> (Show)</a>
 			<style>
 				#<?=$className?>_Queries {
 					text-align: left;
@@ -178,6 +178,7 @@
 					background-color: white;
 					color: black;
 					margin-top: 4em;
+					display:none;
 				}
 
 				#<?=$className?>_Queries caption {
