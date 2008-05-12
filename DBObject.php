@@ -293,6 +293,26 @@
 				}
 			}
 
+			public function __clone() {
+				unset($this->ID);
+				$this->_trackChanges  = false;
+				$this->_initialValues = array();
+				
+				foreach ($this as $k => $v) {
+					if (isset($v) and is_object($v)) {
+						$this->$k = clone $v;
+					}
+				}
+				
+				foreach (array("Properties", "_lazyObjects") as $f) {
+					foreach ($this->Properties as $k => $v) {
+						if (isset($v) and is_object($v)) {
+							$this->$f[$k] = clone $v;
+						}
+					}
+				}
+			}
+
 			private function _loadCollection($p) {
 				if (empty($this->ID)) return null;
 
