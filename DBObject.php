@@ -313,6 +313,20 @@
 				}
 			}
 
+			public function __sleep() {
+				// It usually doesn't make sense to serialize DBObjects: the database is the serialization layer
+				if (empty($this->ID)) {
+					return array();
+				} else {
+					return array("ID");
+				}
+			}
+			
+			public function __wakeup() {
+				// Rather than rely on possibly stale, serialized data we'll reload the known-current data from the database:
+				$this->__construct($this->ID);
+			}
+
 			private function _loadCollection($p) {
 				if (empty($this->ID)) return null;
 
