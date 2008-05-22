@@ -103,13 +103,13 @@
 						$ID = intval($ID);
 
 						if (empty($ID)) {
-							throw new Exception("Constructor called with empty id $ID");
+							throw new InvalidArgumentException(get_class($this) . " constructor called with empty id $ID");
 						}
 
 						$Q = self::$DB->query($this->_generateSelect($this->DBTable, $this->Properties, "ID=$ID"));
 
 						if (count($Q) < 1) {
-							throw new Exception("Constructor called with non-existent id $ID");
+							throw new InvalidArgumentException(get_class($this) . " constructor called with ID $ID which is not in {$this->DBTable}");
 						} else {
 							assert(count($Q) == 1);
 							$this->ID = $ID;
