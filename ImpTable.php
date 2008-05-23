@@ -26,6 +26,7 @@
 		public $DefaultSortOrder    = 'Ascending';
 		public $DefaultSortKey;
 		public $JSRenderQueue       = 'ImpTable_Generators'; // This is the name of the JavaScript array which we will add the renderer for the table to
+		public $JSRendererName			= 'ImpTable_Renderer';
 		public $yuiDataTableOptions = array();
 		private $_dataType          = 'internal';
 		private $_dataSource;
@@ -257,17 +258,17 @@
 
 				<script type="text/javascript" charset="utf-8">//<![CDATA[
 					<?=$this->JSRenderQueue?>	= new Array();
-					ImpTable_Renderer = function() { while(f = <?=$this->JSRenderQueue?>.shift()){ f(); }; };
+					<?=$this->JSRendererName?> = function() { while(f = <?=$this->JSRenderQueue?>.shift()){ f(); }; };
 
 					if (!(window.YAHOO && YAHOO.widget && YAHOO.widget.DataTable && YAHOO.util && YAHOO.util.DataSource)) {
 						ImpTable_Loader = new YAHOO.util.YUILoader({
 							require: ['datatable', 'datasource'],
 							optional:true,
-							onSuccess:ImpTable_Renderer
+							onSuccess:<?=$this->JSRendererName?>
 						});
 						ImpTable_Loader.insert();
 					} else {
-						YAHOO.util.Event.onDOMReady(ImpTable_Renderer);
+						YAHOO.util.Event.onDOMReady(<?=$this->JSRendererName?>);
 					}
 				//]]>
 				</script>
