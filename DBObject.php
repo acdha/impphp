@@ -31,7 +31,9 @@
 
 			static $DB;
 
-			abstract public static function &get($id = false);
+			public static function &get($id = false) {
+				throw new Exception("Your class must override DBObject::get()!");
+			}
 
 			protected static function &_getInstance($class, $id = false) {
 				if ($id === false) {
