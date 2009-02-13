@@ -42,7 +42,7 @@
 		protected static $JS_Initialized = false;
 
 		function ImpTable(array $Data = array()) {
-			$this->Data = $Data;
+			$this->Data = array_values($Data);
 		}
 
 		function AutoSort($Key = false, $Order = false) {
@@ -263,7 +263,7 @@
 					if (!(window.YAHOO && YAHOO.widget && YAHOO.widget.DataTable && YAHOO.util && YAHOO.util.DataSource)) {
 						ImpTable_Loader = new YAHOO.util.YUILoader({
 							require: ['datatable', 'datasource'],
-							optional:true,
+							loadOptional:true,
 							onSuccess:<?=$this->JSRendererName?>
 						});
 						ImpTable_Loader.insert();
