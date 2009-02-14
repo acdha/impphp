@@ -35,7 +35,7 @@
 	 *			- mysqli_field_len() to avoid fetching large data
 	 *			- mysqli_data_seek() to avoid fetching some rows or to see a row again
 	 */
-	require_once('ImpUtils/ImpDB.php');
+	require_once('ImpPHP/ImpDB.php');
 
 	class DB_MySQL extends ImpDB implements ImpDBO {
 		protected $Server;

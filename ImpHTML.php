@@ -1,5 +1,5 @@
 <?php
-	require_once('ImpUtils/Utilities.php');
+	require_once('ImpPHP/Utilities.php');
 
 	class ImpHTML {
 		var $original;

@@ -12,11 +12,11 @@
 		 */
 
 		if (!class_exists('ImpSQLBuilder')) {
-			require_once('ImpUtils/ImpSQLBuilder.php');
+			require_once('ImpPHP/ImpSQLBuilder.php');
 		}
 
 		if (!function_exists('ImpErrorHandler')) {
-			require_once('ImpUtils/Utilities.php');
+			require_once('ImpPHP/Utilities.php');
 		}
 
 		abstract class DBObject {

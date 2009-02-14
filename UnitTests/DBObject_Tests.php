@@ -2,8 +2,8 @@
 	require_once('./config.php');
 	require_once('PHPUnit/Framework.php');
 	require_once('PHPUnit/TextUI/TestRunner.php');
-	require_once('ImpUtils/ImpPDO.php');
-	require_once('ImpUtils/DBObject.php');
+	require_once('ImpPHP/ImpPDO.php');
+	require_once('ImpPHP/DBObject.php');
 
 	class DBObject_Tests extends PHPUnit_Framework_TestCase {
 		function __construct() {
@@ -31,7 +31,7 @@
 		}
 
 		function getDB() {
-			$this->db =& new ImpPDO('sqlite:' . $this->TempFile);
+			$this->db = new ImpPDO('sqlite:' . $this->TempFile);
 			$this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 			DBObject::$DB      = $this->db;
 			ImpSQLBuilder::$DB = $this->db;

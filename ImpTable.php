@@ -16,7 +16,7 @@
 				'aColumn' => array('text' => 'Column Name', 'type'=> 'number', 'sortable' => true, 'formatter' => 'myCustomYUIFormatter'),
 			);
 
-		See http://improbable.org/chris/Software/ImpUtils/ImpTable/ for more information.
+		See http://improbable.org/chris/Software/ImpPHP/ImpTable/ for more information.
 
 	*/
 

@@ -6,7 +6,7 @@
 	 *
 	 * @author Chris Adams
 	 */
-	require_once('ImpUtils/ImpDB.php');
+	require_once('ImpPHP/ImpDB.php');
 
 	class ImpPDO extends ImpDB implements ImpDBO {
 		protected $DSN;

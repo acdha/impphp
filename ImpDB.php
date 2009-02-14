@@ -133,7 +133,7 @@
 
 		/* Diagnostic code */
 		function printQueryLog() {
-			include_once('ImpUtils/ImpTable.php');
+			include_once('ImpPHP/ImpTable.php');
 
 			uasort($this->queryLog, create_function('$a,$b', 'return strcmp($b["Count"], $a["Count"]);'));
 
@@ -157,7 +157,7 @@
 			$QueryTable->AutoSort();
 
 			$QueryTable->Attributes['id']    = $className . '_Queries';
-			$QueryTable->Attributes['class'] = 'ImpUtils Debug';
+			$QueryTable->Attributes['class'] = 'ImpPHP Debug';
 			$QueryTable->Caption             = $className . ': ' . number_format($TotalQueries) . ' queries in ' . number_format($this->cummulativeQueryTime, 3) . ' seconds';
 
 			$QueryTable->ColumnHeaders       = array(
