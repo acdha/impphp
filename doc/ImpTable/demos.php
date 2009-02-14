@@ -1,8 +1,4 @@
 <?
-  if (is_readable("/home/acdha/PHP-Library")) {
-    ini_set("include_path", ".:/home/acdha/PHP-Library:" . ini_get("include_path"));
-  }
-  
   require_once('ImpPHP/ImpTable.php');
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
