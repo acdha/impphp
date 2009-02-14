@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>
+			ImpTable: a PHP5 wrapper for YUI DataTable
+		</title>
+		<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.5.1/build/reset-fonts-grids/reset-fonts-grids.css" />
+		<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.5.1/build/base/base-min.css" />
+		<link rel="stylesheet" type="text/css" href="../docs.css" />
+	</head>
+	<body>
+		<div>
+			<p>
+				Yahoo has included <a href="http://developer.yahoo.com/yui/datatable/">a rich table control</a> in <a href="http://developer.yahoo.com/yui/">YUI</a>. The original ImpTable class was written years ago and while it was quite handy for quickly generating valid, sortable, stylable HTML tables it was entirely server-side and had no provision for loading external data, editing, custom formatting, etc. Rather than re-invent the wheel I decided to convert it to a YUI DataTable. The goal is simplicity: ImpTable now allows you to create a DataTable using two lines of PHP while still allowing you to customize it extensive using CSS and JavaScript to take advantage of DataTable's rich set of features.
+			</p>
+			<p>
+				Here's an example of an ImpTable created when my database wrapper class (ImpDB) is profiling database activity: 
+				<img src="http://improbable.org/chris/Software/ImpTable_screenshot.png" alt="ImpTable reporting database queries" />
+			</p>
+			<p>
+				ImpTable tries to make the process of including a YUI DataTable as simple as possible, including automatically loading YUI if your page does not already use it. If you're already using YUI, I strongly recommend loading the DataTable and DataSource modules along with your other components to avoid version mismatches.
+			</p>
+			<p>
+				You can <a href="http://svn.improbable.org/ImpPHP/trunk/ImpTable.php">download ImpTable directly</a> or check out a copy of the Subversion repository which contains it: <code>svn co http://svn.improbable.org/ImpPHP/branches/trunk ImpPHP</code>
+			</p>
+			<p>
+				For details including usage of xmlHttpRequest data and scripting please visit the <strong><a href="demos.php">Demonstrations</a></strong>.
+			</p>
+		</div>
+	</body>
+</html>

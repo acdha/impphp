@@ -1,0 +1,40 @@
+html
+{
+	background-color:#9999cc;
+	color:black;
+	font-family:optima, sans-serif;
+}
+
+body > div
+{
+	background:white;
+	border:solid 3px navy;
+	color:black;
+	font-size:10pt;
+	margin:2em auto;
+	padding:4pt;
+	text-align:left;
+	width: 80%;
+	overflow: auto;
+}
+
+table
+{
+	margin-left:auto;
+	margin-right:auto;
+}
+
+p,pre
+{
+	margin:4pt;
+	padding:4pt;
+}
+
+pre
+{
+	border-left:solid blue 2pt;
+	font-family:profont, monaco, "lucida console", monospace;
+	font-size:9pt;
+	line-height:125%;
+	margin-left:8pt;
+}

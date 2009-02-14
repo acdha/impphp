@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Yes, this is contrived. No, an example doesn't warrant more -->
+<words>
+	<row>
+		<col1>foo</col1>
+		<col2>bar</col2>
+	</row>
+	<row>
+		<col1>baaz</col1>
+		<col2>quux</col2>
+	</row>
+</words>

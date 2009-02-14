@@ -1,0 +1,15 @@
+{
+    "metavars":
+    [
+        {
+            	"col1":"foo",
+							"col2":"bar"
+
+        },
+        {
+            
+            "col1":"baaz",
+            "col2":"quux"
+        }
+    ]
+}
