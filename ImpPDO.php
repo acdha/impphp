@@ -21,6 +21,9 @@
 			$this->Username     = $Username;
 			$this->Password     = $Password;
 			$this->Options      = $Options;
+
+			$this->PDO->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
 			$this->setCharacterSet();
 
 			list($this->Scheme) = explode(':', $this->DSN, 2);
