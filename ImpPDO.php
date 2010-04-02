@@ -6,7 +6,7 @@
 	 *
 	 * @author Chris Adams
 	 */
-	require_once('ImpPHP/ImpDB.php');
+ require_once('ImpPhp/ImpDB.php');
 
 	class ImpPDO extends ImpDB implements ImpDBO {
 		protected $DSN;
@@ -25,6 +25,7 @@
 			$this->PDO->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 			$this->setCharacterSet();
+			
 
 			list($this->Scheme) = explode(':', $this->DSN, 2);
 
@@ -169,7 +170,7 @@
 			$this->startTimer();
 
 			if (empty($args)) {
-				$ret = call_user_func_array(array($this->PDO, 'query'), $sql)->fetchAll(PDO::FETCH_ASSOC);
+				$ret = call_user_func_array(array($this->PDO, 'query'), array($sql))->fetchAll(PDO::FETCH_ASSOC);
 			} else {
 				$st = $this->PDO->prepare($sql);
 				if (!$st) {

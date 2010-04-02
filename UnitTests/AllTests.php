@@ -23,7 +23,7 @@ class AllTests {
 		}
 
 		public static function suite() {
-				$suite = new PHPUnit_Framework_TestSuite('ImpPHP');
+				$suite = new PHPUnit_Framework_TestSuite('ImpPhp');
 				$suite->addTestSuite('ImpPDO_Tests');
 				$suite->addTestSuite('DBObject_Tests');
 				// TODO: $suite->addTestSuite('Utilities_Tests');

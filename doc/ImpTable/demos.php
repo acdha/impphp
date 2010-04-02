@@ -1,5 +1,5 @@
 <?
-  require_once('ImpPHP/ImpTable.php');
+  require_once('ImpPhp/ImpTable.php');
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -59,7 +59,7 @@ $QueryTable-&gt;Attributes['id'] = "ReportTable5";
 $QueryTable-&gt;Attributes['class'] = "ReportTable";
 </pre>
       <p>
-        For a full example of how this can be used, you can see the optional database profiling report in ImpDB-&gt;printQueryLog(): <a href="http://svn.improbable.org/ImpPHP/trunk/ImpDB.php">ImpDB.php</a>
+        For a full example of how this can be used, you can see the optional database profiling report in ImpDB-&gt;printQueryLog(): <a href="http://svn.improbable.org/ImpPhp/trunk/ImpDB.php">ImpDB.php</a>
       </p>
       <p>
         The same approach can be used to add custom formatting callbacks, sort functions, etc. in your javascript before calling <code>ImpTable-&gt;generate()</code>. This works exactly as it does in normal DataTables - if it doesn't, please <a href="mailto:chris@improbable.org">let me know!</a>

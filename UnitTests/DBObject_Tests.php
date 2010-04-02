@@ -2,8 +2,8 @@
 	require_once('./config.php');
 	require_once('PHPUnit/Framework.php');
 	require_once('PHPUnit/TextUI/TestRunner.php');
-	require_once('ImpPHP/ImpPDO.php');
-	require_once('ImpPHP/DBObject.php');
+	require_once('ImpPhp/ImpPDO.php');
+	require_once('ImpPhp/DBObject.php');
 
 	class DBObject_Tests extends PHPUnit_Framework_TestCase {
 		function __construct() {

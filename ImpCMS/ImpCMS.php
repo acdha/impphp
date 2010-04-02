@@ -21,16 +21,16 @@
 		@access	 public
 	*/
 
-require_once("ImpUtils/Utilities.php");
-require_once("ImpUtils/DB_MySQL.php");
-require_once("ImpUtils/DBObject.php");
-require_once("ImpUtils/ImpSQLBuilder.php");
-require_once('ImpUtils/ImpSingleton.php');
+require_once("ImpPhp/Utilities.php");
+require_once("ImpPhp/DB_MySQL.php");
+require_once("ImpPhp/DBObject.php");
+require_once("ImpPhp/ImpSQLBuilder.php");
+require_once('ImpPhp/ImpSingleton.php');
 
-require_once("ImpUtils/ImpCMS/Document.php");
-require_once("ImpUtils/ImpCMS/DocumentVersion.php");
-require_once("ImpUtils/ImpCMS/EventDispatcher.php");
-require_once("ImpUtils/ImpCMS/PermissionManager.php");
+require_once("ImpPhp/ImpCMS/Document.php");
+require_once("ImpPhp/ImpCMS/DocumentVersion.php");
+require_once("ImpPhp/ImpCMS/EventDispatcher.php");
+require_once("ImpPhp/ImpCMS/PermissionManager.php");
 
 // Site-specific configuration and generally the only file the user needs to edit
 require_once("impcms-config.php");
