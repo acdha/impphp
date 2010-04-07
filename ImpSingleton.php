@@ -12,7 +12,7 @@ abstract class ImpSingleton {
 		if (isset(self::$Instances[$ClassName])) {
 	 	  return self::$Instances[$ClassName];
 		} elseif (!empty($ClassName)) {
-			self::$Instances[$ClassName] = &new $ClassName();  //TODO Fix Deprecated
+			self::$Instances[$ClassName] = new $ClassName();
 			return self::$Instances[$ClassName];
 		} else {
 			trigger_error('ImpSingleton::getInstance() called without a class or existing instance!', E_USER_ERROR);
