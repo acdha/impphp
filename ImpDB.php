@@ -40,7 +40,7 @@
 			$this->profileQueries = $b;
 		}
 
-		function setLog(Log $Log) {
+		function setLog($Log) {
 			$this->Log = $Log;
 		}
 
