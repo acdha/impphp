@@ -225,8 +225,12 @@
 				$URI = "$PROTOCOL://$HTTP_HOST$PATH/$URI";
 			}
 		}
-
+		
 		header("Location: $URI", true, $Permanent ? 301 : 302);
+		
+		//This flush and exit ensure a redirect when there could be
+		//conflicting buffered headers later
+		flush();
 		exit;
 	}
 
