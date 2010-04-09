@@ -71,7 +71,7 @@
 			$this->cummulativeQueryTime += $elapsed;
 
 			if ($this->logQueries) {
-				$this->log("$sql (Elapsed time: " . number_format($elapsed, 6) . " seconds. Total: {$this->queryCount} queries in " . number_format($this->cummulativeQueryTime, 6) . " seconds)", PEAR_LOG_DEBUG);
+				$this->log("$sql (Elapsed time: " . number_format($elapsed, 6) . " seconds. Total: {$this->queryCount} queries in " . number_format($this->cummulativeQueryTime, 6) . " seconds)", 7);
 			}
 
 			$this->queryCount++;
