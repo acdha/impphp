@@ -58,7 +58,7 @@
 			assert(array_key_exists($this->_SortKey, reset($this->Data)));
 
 			reset($this->Data);
-			if (!empty($this->_SortKey) and array_key_exists($this->_SortKey, current(($this->Data)))) {
+			if (!empty($this->_SortKey) and array_key_exists($this->_SortKey, current($this->Data))) {
 				usort($this->Data, array($this, ($this->_SortOrder == "Ascending" ? "_compare" : "_reverse_compare")));
 			}
 		}
