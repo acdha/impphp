@@ -217,7 +217,7 @@
 			}
 		}
 
-		if (!eregi("^(http|https|ftp):.*$", $URI)) {
+		if (!preg_match("/^(http|https|ftp):.*/", $URI)) {
 			if ($URI[0] == '/') {
 				$URI = "$PROTOCOL://$HTTP_HOST$URI";
 			} else {
