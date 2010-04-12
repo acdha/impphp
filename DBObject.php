@@ -63,7 +63,13 @@
 						$id = $d['ID'];
 
 						if (!array_key_exists($id, self::$_instances[$class])) {
-							self::$_instances[$class][$id] = new $class($d);
+              try {
+                self::$_instances[$class][$id] = new $class($d);
+              }
+              catch (InvalidArgumentException $e) {
+                $tmp = false; //Kludge: This is usually returned by reference in get()
+                return $tmp;  //so we return a variable to prevent an error notice
+              }
 						}
 
 						$objs[$id] = self::$_instances[$class][$id];
@@ -75,7 +81,13 @@
 				} else {
 
 					if (!array_key_exists($id, self::$_instances[$class])) {
-						self::$_instances[$class][$id] = new $class($id);
+            try {
+              self::$_instances[$class][$id] = new $class($id);
+            }
+            catch (InvalidArgumentException $e) {
+              $tmp = false;   //Kludge: This is usually returned by reference in get()
+              return $tmp;    //so we return a variable to prevent an error notice
+            }
 					}
 
 					return self::$_instances[$class][$id];
