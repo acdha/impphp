@@ -22,7 +22,7 @@
 		if (!(defined("IMP_DEBUG") && IMP_DEBUG)) {
 			// Use a site-specific error message if one has been defined:
 			if (defined("IMP_FATAL_ERROR_MESSAGE")) {
-				print IMP_FATA_ERROR_MESSAGE;
+				print IMP_FATAL_ERROR_MESSAGE;
 			} else {
 				print "<p>An error occurred while processing your request. The administrator has been notified.</p>";
 
